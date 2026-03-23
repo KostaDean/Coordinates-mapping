@@ -1,1 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Board Coordinate Calibrator</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      background: #222;
+      padding: 10px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    input, select, button, textarea {
+      font-size: 16px;
+      padding: 6px;
+    }
+    #wrap {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    #board {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #output {
+      width: 96%;
+      margin: 10px;
+      height: 220px;
+      box-sizing: border-box;
+      background: #000;
+      color: #0f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <label>Mode:</label>
+    <select id="mode">
+      <option value="center">Compartment center</option>
+      <option value="symbol">Symbol slot</option>
+    </select>
 
+    <label>Label:</label>
+    <input id="label" type="text" placeholder="e.g. R1 or T3_29" />
+
+    <label>Radius:</label>
+    <input id="radius" type="number" value="12" min="1" max="100" />
+
+    <button id="undoBtn">Undo</button>
+    <button id="clearBtn">Clear All</button>
+    <button id="exportBtn">Export JSON</button>
+    <button id="copyBtn">Copy JSON</button>
+  </div>
+
+  <div id="wrap">
+    <img id="board" src="A.spiral 2.jpeg" alt="Board image">
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
+
+  <script>
+    const board = document.getElementById('board');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+
+    const modeEl = document.getElementById('mode');
+    const labelEl = document.getElementById('label');
+    const radiusEl = document.getElementById('radius');
+    const outputEl = document.getElementById('output');
+
+    const points = {};
+    const history = [];
+
+    function resizeCanvas() {
+      const rect = board.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      redraw();
+    }
+
+    board.addEventListener('load', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
+
+    function imageCoordsFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (board.naturalWidth / rect.width);
+      const y = (e.clientY - rect.top) * (board.naturalHeight / rect.height);
+      return {
+        x: Math.round(x),
+        y: Math.round(y)
+      };
+    }
+
+    function displayCoordsToCanvas(x, y) {
+      return {
+        x: x * (canvas.width / board.naturalWidth),
+        y: y * (canvas.height / board.naturalHeight)
+      };
+    }
+
+    function drawPoint(label, point) {
+      const p = displayCoordsToCanvas(point.x, point.y);
+      const r = Math.max(4, point.r * (canvas.width / board.naturalWidth));
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = point.mode === 'center' ? 'rgba(0,128,255,0.35)' : 'rgba(255,0,0,0.45)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = point.mode === 'center' ? 'rgba(0,128,255,0.9)' : 'rgba(255,255,255,0.9)';
+      ctx.stroke();
+
+      ctx.fillStyle = 'yellow';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(label, p.x + r + 3, p.y - 3);
+    }
+
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const [label, point] of Object.entries(points)) {
+        drawPoint(label, point);
+      }
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const label = labelEl.value.trim();
+      if (!label) {
+        alert('Enter a label first, such as R1 or T3_29');
+        return;
+      }
+
+      const { x, y } = imageCoordsFromEvent(e);
+      const point = {
+        x,
+        y,
+        r: Number(radiusEl.value) || 12,
+        mode: modeEl.value
+      };
+
+      if (points[label]) {
+        history.push({ type: 'replace', label, oldValue: { ...points[label] } });
+      } else {
+        history.push({ type: 'add', label });
+      }
+
+      points[label] = point;
+      redraw();
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      const last = history.pop();
+      if (!last) return;
+
+      if (last.type === 'add') {
+        delete points[last.label];
+      } else if (last.type === 'replace') {
+        points[last.label] = last.oldValue;
+      }
+      redraw();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (!confirm('Clear all points?')) return;
+      for (const key of Object.keys(points)) delete points[key];
+      history.length = 0;
+      redraw();
+      outputEl.value = '';
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const exported = {
+        image: {
+          file: board.getAttribute('src'),
+          width: board.naturalWidth,
+          height: board.naturalHeight
+        },
+        points
+      };
+      outputEl.value = JSON.stringify(exported, null, 2);
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      if (!outputEl.value.trim()) {
+        alert('Export JSON first.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(outputEl.value);
+        alert('JSON copied.');
+      } catch {
+        outputEl.select();
+        document.execCommand('copy');
+        alert('JSON copied.');
+      }
+    });
+
+    if (board.complete) resizeCanvas();
+  </script>
+</body>
+</html>

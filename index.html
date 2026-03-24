@@ -1,221 +1,409 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Board Coordinate Calibrator</title>
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: sans-serif;
-    }
-    .toolbar {
-      position: sticky;
-      top: 0;
-      background: #222;
-      padding: 10px;
-      z-index: 10;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    input, select, button, textarea {
-      font-size: 16px;
-      padding: 6px;
-    }
-    #wrap {
-      position: relative;
-      display: inline-block;
-      width: 100%;
-    }
-    #board {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    #output {
-      width: 96%;
-      margin: 10px;
-      height: 220px;
-      box-sizing: border-box;
-      background: #000;
-      color: #0f0;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Board Coordinate Calibrator</title>
+<style>
+  :root {
+    --bg: #111;
+    --panel: #1c1c1c;
+    --text: #f2f2f2;
+    --muted: #bdbdbd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel);
+    border-bottom: 1px solid #333;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .toolbar label { font-size: 16px; }
+  .toolbar input[type="text"],
+  .toolbar input[type="number"],
+  .toolbar select,
+  textarea {
+    font-size: 16px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid #555;
+    background: #fff;
+    color: #111;
+  }
+  .toolbar input[type="text"] { min-width: 170px; }
+  .toolbar input[type="number"] { width: 72px; }
+  button {
+    font-size: 16px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid #666;
+    background: #eee;
+    color: #111;
+    cursor: pointer;
+  }
+  .row-break { flex-basis: 100%; height: 0; }
+  .wrap {
+    width: 100%;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 10px;
+  }
+  .board-wrap {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border: 1px solid #444;
+    overflow: hidden;
+  }
+  #board {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    touch-action: manipulation;
+  }
+  .status {
+    margin: 8px 0 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  #output {
+    width: 100%;
+    min-height: 240px;
+    margin-top: 12px;
+    padding: 12px;
+    background: #000;
+    color: #8ef58e;
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 8px;
+    line-height: 1.4;
+  }
+  .small {
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>
 </head>
 <body>
   <div class="toolbar">
-    <label>Mode:</label>
+    <label for="mode">Mode:</label>
     <select id="mode">
       <option value="center">Compartment center</option>
       <option value="symbol">Symbol slot</option>
     </select>
 
-    <label>Label:</label>
+    <label for="label">Label:</label>
     <input id="label" type="text" placeholder="e.g. R1 or T3_29" />
 
-    <label>Radius:</label>
-    <input id="radius" type="number" value="12" min="1" max="100" />
+    <label for="radius">Radius:</label>
+    <input id="radius" type="number" value="12" min="1" max="100" step="1" />
 
-    <button id="undoBtn">Undo</button>
-    <button id="clearBtn">Clear All</button>
-    <button id="exportBtn">Export JSON</button>
-    <button id="copyBtn">Copy JSON</button>
+    <button id="undoBtn" type="button">Undo</button>
+    <button id="clearBtn" type="button">Clear All</button>
+    <button id="exportBtn" type="button">Export JSON</button>
+    <button id="copyBtn" type="button">Copy JSON</button>
+    <button id="loadBtn" type="button">Load JSON</button>
+
+    <span class="row-break"></span>
+
+    <label for="imgSrc">Image file:</label>
+    <input id="imgSrc" type="text" value="A_spiral.jpg" />
+    <button id="loadImageBtn" type="button">Load Image</button>
+    <input id="filePicker" type="file" accept="image/*" />
+    <span class="small">Keep your board image in the same folder as this file, or choose it here.</span>
   </div>
 
-  <div id="wrap">
-    <img id="board" src="A.spiral.jpg" alt="Board image">
-    <canvas id="overlay"></canvas>
+  <div class="wrap">
+    <div class="board-wrap" id="boardWrap">
+      <img id="board" alt="Board image" />
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="status" id="status">Ready.</div>
+
+    <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
+
+    <div class="hint">
+      Use: <b>Label first → then tap</b>.<br>
+      Suggested labels: <b>R1, R2, ...</b> for rim centers, <b>T1, T2, ...</b> for track centers, and <b>R1_02</b>, <b>T3_29</b>, <b>A31_RO</b> for symbols.<br>
+      Everything auto-saves in your browser. Re-opening the page restores your points.
+    </div>
   </div>
 
-  <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
+<script>
+(() => {
+  const STORAGE_KEY_POINTS = 'coordmap_points_v2';
+  const STORAGE_KEY_IMAGE = 'coordmap_image_src_v2';
 
-  <script>
-    const board = document.getElementById('board');
-    const canvas = document.getElementById('overlay');
-    const ctx = canvas.getContext('2d');
+  const board = document.getElementById('board');
+  const overlay = document.getElementById('overlay');
+  const ctx = overlay.getContext('2d');
 
-    const modeEl = document.getElementById('mode');
-    const labelEl = document.getElementById('label');
-    const radiusEl = document.getElementById('radius');
-    const outputEl = document.getElementById('output');
+  const modeEl = document.getElementById('mode');
+  const labelEl = document.getElementById('label');
+  const radiusEl = document.getElementById('radius');
+  const outputEl = document.getElementById('output');
+  const statusEl = document.getElementById('status');
+  const imgSrcEl = document.getElementById('imgSrc');
+  const filePicker = document.getElementById('filePicker');
 
-    const points = {};
-    const history = [];
+  let points = {};
+  let history = [];
+  let pendingImageObjectURL = null;
 
-    function resizeCanvas() {
-      const rect = board.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
-      redraw();
+  function setStatus(msg) {
+    statusEl.textContent = msg;
+  }
+
+  function savePoints() {
+    localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(points));
+  }
+
+  function saveImageSource(src) {
+    localStorage.setItem(STORAGE_KEY_IMAGE, src);
+  }
+
+  function loadSavedPoints() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_POINTS);
+      points = raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      points = {};
     }
+  }
 
-    board.addEventListener('load', resizeCanvas);
-    window.addEventListener('resize', resizeCanvas);
+  function exportObject() {
+    return {
+      image: {
+        file: board.getAttribute('data-source') || imgSrcEl.value.trim() || '',
+        width: board.naturalWidth || 0,
+        height: board.naturalHeight || 0
+      },
+      points
+    };
+  }
 
-    function imageCoordsFromEvent(e) {
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) * (board.naturalWidth / rect.width);
-      const y = (e.clientY - rect.top) * (board.naturalHeight / rect.height);
-      return {
-        x: Math.round(x),
-        y: Math.round(y)
-      };
+  function exportJSONToTextbox() {
+    outputEl.value = JSON.stringify(exportObject(), null, 2);
+    setStatus('JSON exported to text area.');
+  }
+
+  function fitCanvas() {
+    const rect = board.getBoundingClientRect();
+    overlay.width = Math.round(rect.width);
+    overlay.height = Math.round(rect.height);
+    redrawAll();
+  }
+
+  function imgToCanvasCoords(x, y) {
+    return {
+      x: x * (overlay.width / board.naturalWidth),
+      y: y * (overlay.height / board.naturalHeight)
+    };
+  }
+
+  function eventToImageCoords(evt) {
+    const rect = overlay.getBoundingClientRect();
+    const clientX = evt.clientX;
+    const clientY = evt.clientY;
+    const x = (clientX - rect.left) * (board.naturalWidth / rect.width);
+    const y = (clientY - rect.top) * (board.naturalHeight / rect.height);
+    return { x: Math.round(x), y: Math.round(y) };
+  }
+
+  function drawPoint(label, p) {
+    const c = imgToCanvasCoords(p.x, p.y);
+    const scale = overlay.width / board.naturalWidth;
+    const r = Math.max(4, p.r * scale);
+
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = p.mode === 'center'
+      ? 'rgba(0, 140, 255, 0.30)'
+      : 'rgba(255, 60, 60, 0.35)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = p.mode === 'center'
+      ? 'rgba(80, 190, 255, 0.95)'
+      : 'rgba(255,255,255,0.95)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffe66d';
+    ctx.font = `${Math.max(11, 13 * scale)}px sans-serif`;
+    ctx.fillText(label, c.x + r + 4, c.y - 3);
+  }
+
+  function redrawAll() {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    Object.entries(points).forEach(([label, p]) => drawPoint(label, p));
+  }
+
+  function addOrReplacePoint(label, point) {
+    if (points[label]) {
+      history.push({ type: 'replace', label, oldValue: { ...points[label] } });
+    } else {
+      history.push({ type: 'add', label });
     }
+    points[label] = point;
+    savePoints();
+    redrawAll();
+  }
 
-    function displayCoordsToCanvas(x, y) {
-      return {
-        x: x * (canvas.width / board.naturalWidth),
-        y: y * (canvas.height / board.naturalHeight)
-      };
+  function handleTap(evt) {
+    if (!board.naturalWidth || !board.naturalHeight) {
+      setStatus('Load the image first.');
+      return;
     }
-
-    function drawPoint(label, point) {
-      const p = displayCoordsToCanvas(point.x, point.y);
-      const r = Math.max(4, point.r * (canvas.width / board.naturalWidth));
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-      ctx.fillStyle = point.mode === 'center' ? 'rgba(0,128,255,0.35)' : 'rgba(255,0,0,0.45)';
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = point.mode === 'center' ? 'rgba(0,128,255,0.9)' : 'rgba(255,255,255,0.9)';
-      ctx.stroke();
-
-      ctx.fillStyle = 'yellow';
-      ctx.font = '14px sans-serif';
-      ctx.fillText(label, p.x + r + 3, p.y - 3);
+    const label = labelEl.value.trim();
+    if (!label) {
+      alert('Enter a label first, such as R1 or T3_29.');
+      return;
     }
+    const { x, y } = eventToImageCoords(evt);
+    const point = {
+      x,
+      y,
+      r: Number(radiusEl.value) || 12,
+      mode: modeEl.value
+    };
+    addOrReplacePoint(label, point);
+    setStatus(`Saved ${label} at (${x}, ${y}).`);
+  }
 
-    function redraw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const [label, point] of Object.entries(points)) {
-        drawPoint(label, point);
-      }
+  overlay.addEventListener('click', handleTap);
+
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    const last = history.pop();
+    if (!last) {
+      setStatus('Nothing to undo.');
+      return;
     }
+    if (last.type === 'add') {
+      delete points[last.label];
+    } else if (last.type === 'replace') {
+      points[last.label] = last.oldValue;
+    }
+    savePoints();
+    redrawAll();
+    setStatus('Undo complete.');
+  });
 
-    canvas.addEventListener('click', (e) => {
-      const label = labelEl.value.trim();
-      if (!label) {
-        alert('Enter a label first, such as R1 or T3_29');
-        return;
-      }
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if (!confirm('Clear all mapped points?')) return;
+    points = {};
+    history = [];
+    savePoints();
+    redrawAll();
+    outputEl.value = '';
+    setStatus('All points cleared.');
+  });
 
-      const { x, y } = imageCoordsFromEvent(e);
-      const point = {
-        x,
-        y,
-        r: Number(radiusEl.value) || 12,
-        mode: modeEl.value
-      };
+  document.getElementById('exportBtn').addEventListener('click', exportJSONToTextbox);
 
-      if (points[label]) {
-        history.push({ type: 'replace', label, oldValue: { ...points[label] } });
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    if (!outputEl.value.trim()) exportJSONToTextbox();
+    try {
+      await navigator.clipboard.writeText(outputEl.value);
+      setStatus('JSON copied.');
+    } catch (e) {
+      outputEl.focus();
+      outputEl.select();
+      document.execCommand('copy');
+      setStatus('JSON copied.');
+    }
+  });
+
+  document.getElementById('loadBtn').addEventListener('click', () => {
+    const pasted = prompt('Paste previously exported JSON here:');
+    if (!pasted) return;
+    try {
+      const obj = JSON.parse(pasted);
+      points = obj.points || {};
+      savePoints();
+      if (obj.image && obj.image.file && !obj.image.file.startsWith('blob:')) {
+        imgSrcEl.value = obj.image.file;
+        loadImage(obj.image.file, false);
       } else {
-        history.push({ type: 'add', label });
+        redrawAll();
       }
+      outputEl.value = JSON.stringify(obj, null, 2);
+      setStatus('JSON loaded.');
+    } catch (e) {
+      alert('Invalid JSON.');
+    }
+  });
 
-      points[label] = point;
-      redraw();
-    });
+  function releaseObjectURL() {
+    if (pendingImageObjectURL) {
+      URL.revokeObjectURL(pendingImageObjectURL);
+      pendingImageObjectURL = null;
+    }
+  }
 
-    document.getElementById('undoBtn').addEventListener('click', () => {
-      const last = history.pop();
-      if (!last) return;
+  function loadImage(src, remember = true) {
+    board.onload = () => {
+      fitCanvas();
+      setStatus(`Loaded image: ${src}`);
+    };
+    board.onerror = () => {
+      setStatus(`Could not load image: ${src}`);
+      alert('Image could not be loaded. Check the file name and extension.');
+    };
+    board.src = src;
+    board.setAttribute('data-source', src);
+    if (remember) saveImageSource(src);
+  }
 
-      if (last.type === 'add') {
-        delete points[last.label];
-      } else if (last.type === 'replace') {
-        points[last.label] = last.oldValue;
-      }
-      redraw();
-    });
+  document.getElementById('loadImageBtn').addEventListener('click', () => {
+    releaseObjectURL();
+    const src = imgSrcEl.value.trim();
+    if (!src) return;
+    loadImage(src, true);
+  });
 
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      if (!confirm('Clear all points?')) return;
-      for (const key of Object.keys(points)) delete points[key];
-      history.length = 0;
-      redraw();
-      outputEl.value = '';
-    });
+  filePicker.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    releaseObjectURL();
+    const url = URL.createObjectURL(file);
+    pendingImageObjectURL = url;
+    board.setAttribute('data-source', file.name);
+    imgSrcEl.value = file.name;
+    loadImage(url, false);
+  });
 
-    document.getElementById('exportBtn').addEventListener('click', () => {
-      const exported = {
-        image: {
-          file: board.getAttribute('src'),
-          width: board.naturalWidth,
-          height: board.naturalHeight
-        },
-        points
-      };
-      outputEl.value = JSON.stringify(exported, null, 2);
-    });
+  window.addEventListener('resize', fitCanvas);
 
-    document.getElementById('copyBtn').addEventListener('click', async () => {
-      if (!outputEl.value.trim()) {
-        alert('Export JSON first.');
-        return;
-      }
-      try {
-        await navigator.clipboard.writeText(outputEl.value);
-        alert('JSON copied.');
-      } catch {
-        outputEl.select();
-        document.execCommand('copy');
-        alert('JSON copied.');
-      }
-    });
-
-    if (board.complete) resizeCanvas();
-  </script>
+  loadSavedPoints();
+  const savedImage = localStorage.getItem(STORAGE_KEY_IMAGE);
+  const initial = savedImage || imgSrcEl.value.trim() || 'A_spiral.jpg';
+  imgSrcEl.value = initial;
+  loadImage(initial, false);
+})();
+</script>
 </body>
 </html>

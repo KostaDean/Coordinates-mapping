@@ -1,92 +1,348 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Coordinate Mapper</title>
 <style>
-  body { font-family: sans-serif; margin: 10px; }
-  canvas { border: 1px solid #ccc; width: 100%; height: auto; }
-  textarea { width: 100%; font-size: 16px; margin-bottom: 10px; }
-  button { margin: 5px 0; padding: 8px; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #111;
+    color: #f2f2f2;
+  }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #1c1c1c;
+    border-bottom: 1px solid #333;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  label { font-size: 16px; }
+  select, input[type="number"], textarea {
+    font-size: 16px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid #555;
+    background: #fff;
+    color: #111;
+  }
+  textarea {
+    width: 100%;
+    min-height: 56px;
+    resize: vertical;
+  }
+  input[type="number"] { width: 78px; }
+  button {
+    font-size: 16px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid #666;
+    background: #eee;
+    color: #111;
+  }
+  .wrap {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 10px;
+  }
+  .board-wrap {
+    position: relative;
+    width: 100%;
+    background: #000;
+    border: 1px solid #444;
+    overflow: hidden;
+  }
+  #board {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    touch-action: manipulation;
+  }
+  #output {
+    width: 100%;
+    min-height: 220px;
+    margin-top: 12px;
+    padding: 12px;
+    background: #000;
+    color: #8ef58e;
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .status {
+    margin-top: 8px;
+    color: #bdbdbd;
+    font-size: 14px;
+  }
+  .hint {
+    color: #bdbdbd;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
+  <div class="toolbar">
+    <label for="mode">Mode:</label>
+    <select id="mode">
+      <option value="center">Compartment center</option>
+      <option value="symbol">Symbol slot</option>
+    </select>
 
-<h3>Coordinate Mapper</h3>
+    <label for="radius">Radius:</label>
+    <input id="radius" type="number" value="12" min="1" max="100" step="1" />
 
-<textarea id="labelInput" rows="2" placeholder="Enter labels separated by ; or new line"></textarea>
+    <button id="startBtn" type="button">Start Mapping</button>
+    <button id="undoBtn" type="button">Undo</button>
+    <button id="clearBtn" type="button">Clear All</button>
+    <button id="exportBtn" type="button">Export JSON</button>
+    <button id="copyBtn" type="button">Copy JSON</button>
+    <button id="importBtn" type="button">Import JSON</button>
 
-<br>
-<button onclick="startMapping()">Start Mapping</button>
-<button onclick="exportJSON()">Export JSON</button>
-<button onclick="importJSON()">Import JSON</button>
+    <div style="flex-basis:100%"></div>
 
-<canvas id="canvas"></canvas>
+    <label for="labels">Labels:</label>
+    <textarea id="labels" placeholder="Enter labels separated by ; or new line, e.g. R1; R1_S12_a; T3_S29_b"></textarea>
+  </div>
+
+  <div class="wrap">
+    <div class="board-wrap">
+      <img id="board" src="A_spiral.jpg" alt="Board image">
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="status" id="status">Ready.</div>
+
+    <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
+
+    <div class="hint">
+      Use <b>Start Mapping</b> after entering one or more labels. Then tap the board in the same order.
+      Use <b>Mode</b> for compartment centers vs symbol slots. Use <b>Radius</b> only for display size.
+      Points auto-save in the browser and restore on reload.
+    </div>
+  </div>
 
 <script>
-let labels = [];
-let currentIndex = 0;
-let points = {};
+(() => {
+  const STORAGE_KEY = 'coord_mapper_saved_points_v3';
+  const board = document.getElementById('board');
+  const overlay = document.getElementById('overlay');
+  const ctx = overlay.getContext('2d');
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+  const modeEl = document.getElementById('mode');
+  const radiusEl = document.getElementById('radius');
+  const labelsEl = document.getElementById('labels');
+  const outputEl = document.getElementById('output');
+  const statusEl = document.getElementById('status');
 
-const img = new Image();
-img.src = 'A.spiral.jpg';
-img.onload = () => {
-  canvas.width = img.width;
-  canvas.height = img.height;
-  draw();
-};
+  let points = {};
+  let history = [];
+  let queue = [];
 
-function startMapping() {
-  const input = document.getElementById('labelInput').value;
-  labels = input.split(/[\n;]+/).map(s => s.trim()).filter(s => s.length);
-  currentIndex = 0;
-}
-
-canvas.addEventListener('click', function(e) {
-  if (currentIndex >= labels.length) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-
-  const label = labels[currentIndex];
-  points[label] = {x: Math.round(x), y: Math.round(y)};
-  currentIndex++;
-
-  draw();
-});
-
-function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.drawImage(img,0,0);
-
-  ctx.fillStyle = 'red';
-  ctx.font = '12px sans-serif';
-
-  for (let key in points) {
-    let p = points[key];
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, 2*Math.PI);
-    ctx.fill();
-    ctx.fillText(key, p.x + 6, p.y);
+  function setStatus(msg) {
+    statusEl.textContent = msg;
   }
-}
 
-function exportJSON() {
-  const data = JSON.stringify(points, null, 2);
-  alert(data);
-}
+  function savePoints() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(points));
+  }
 
-function importJSON() {
-  const input = prompt("Paste JSON:");
-  if (!input) return;
-  points = JSON.parse(input);
-  draw();
-}
+  function loadPoints() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      points = raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      points = {};
+    }
+  }
+
+  function fitCanvas() {
+    const rect = board.getBoundingClientRect();
+    overlay.width = Math.round(rect.width);
+    overlay.height = Math.round(rect.height);
+    redrawAll();
+  }
+
+  function eventToImageCoords(evt) {
+    const rect = overlay.getBoundingClientRect();
+    const x = (evt.clientX - rect.left) * (board.naturalWidth / rect.width);
+    const y = (evt.clientY - rect.top) * (board.naturalHeight / rect.height);
+    return { x: Math.round(x), y: Math.round(y) };
+  }
+
+  function imageToCanvas(x, y) {
+    return {
+      x: x * (overlay.width / board.naturalWidth),
+      y: y * (overlay.height / board.naturalHeight)
+    };
+  }
+
+  function drawPoint(label, p) {
+    const c = imageToCanvas(p.x, p.y);
+    const scale = overlay.width / board.naturalWidth;
+    const r = Math.max(4, p.r * scale);
+
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = p.mode === 'center'
+      ? 'rgba(0,140,255,0.28)'
+      : 'rgba(255,70,70,0.35)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = p.mode === 'center'
+      ? 'rgba(80,190,255,0.95)'
+      : 'rgba(255,255,255,0.95)';
+    ctx.stroke();
+
+    ctx.font = `${Math.max(11, 13 * scale)}px sans-serif`;
+    const text = label;
+    const tw = ctx.measureText(text).width;
+    const tx = c.x + r + 4;
+    const ty = c.y - 2;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(tx - 2, ty - 12, tw + 6, 16);
+    ctx.fillStyle = '#ffe66d';
+    ctx.fillText(text, tx, ty);
+  }
+
+  function redrawAll() {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    Object.entries(points).forEach(([label, p]) => drawPoint(label, p));
+  }
+
+  function startMapping() {
+    queue = labelsEl.value
+      .split(/[\n;]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    setStatus(queue.length ? `Ready to place ${queue.length} label(s).` : 'No labels entered.');
+  }
+
+  function exportJSON() {
+    const obj = {
+      image: {
+        file: board.getAttribute('src'),
+        width: board.naturalWidth || 0,
+        height: board.naturalHeight || 0
+      },
+      points
+    };
+    outputEl.value = JSON.stringify(obj, null, 2);
+    setStatus('JSON exported.');
+  }
+
+  function importJSON() {
+    const pasted = prompt('Paste previously exported JSON here:');
+    if (!pasted) return;
+    try {
+      const obj = JSON.parse(pasted);
+      points = obj.points || {};
+      savePoints();
+      redrawAll();
+      outputEl.value = JSON.stringify(obj, null, 2);
+      setStatus('JSON imported.');
+    } catch (e) {
+      alert('Invalid JSON.');
+    }
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startMapping);
+
+  overlay.addEventListener('click', (evt) => {
+    if (!board.naturalWidth || !board.naturalHeight) {
+      setStatus('Image not loaded.');
+      return;
+    }
+    if (!queue.length) {
+      setStatus('Enter labels and tap Start Mapping first.');
+      return;
+    }
+    const label = queue.shift();
+    const { x, y } = eventToImageCoords(evt);
+    const point = {
+      x,
+      y,
+      r: Number(radiusEl.value) || 12,
+      mode: modeEl.value
+    };
+
+    if (points[label]) {
+      history.push({ type: 'replace', label, oldValue: { ...points[label] } });
+    } else {
+      history.push({ type: 'add', label });
+    }
+
+    points[label] = point;
+    savePoints();
+    redrawAll();
+    setStatus(`Saved ${label} at (${x}, ${y}). ${queue.length} remaining.`);
+  });
+
+  document.getElementById('undoBtn').addEventListener('click', () => {
+    const last = history.pop();
+    if (!last) {
+      setStatus('Nothing to undo.');
+      return;
+    }
+    if (last.type === 'add') {
+      delete points[last.label];
+    } else if (last.type === 'replace') {
+      points[last.label] = last.oldValue;
+    }
+    savePoints();
+    redrawAll();
+    setStatus('Undo complete.');
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    if (!confirm('Clear all mapped points?')) return;
+    points = {};
+    history = [];
+    queue = [];
+    savePoints();
+    redrawAll();
+    outputEl.value = '';
+    setStatus('All points cleared.');
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', exportJSON);
+
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    if (!outputEl.value.trim()) exportJSON();
+    try {
+      await navigator.clipboard.writeText(outputEl.value);
+      setStatus('JSON copied.');
+    } catch (e) {
+      outputEl.focus();
+      outputEl.select();
+      document.execCommand('copy');
+      setStatus('JSON copied.');
+    }
+  });
+
+  document.getElementById('importBtn').addEventListener('click', importJSON);
+
+  board.addEventListener('load', fitCanvas);
+  window.addEventListener('resize', fitCanvas);
+
+  loadPoints();
+  if (board.complete) fitCanvas();
+})();
 </script>
-
 </body>
 </html>

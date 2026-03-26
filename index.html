@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Coordinate Mapper</title>
 <style>
-  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #111; color: #f2f2f2; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: #111; color: #f2f2f2; }
   .toolbar { position: sticky; top: 0; z-index: 10; background: #1c1c1c; border-bottom: 1px solid #333; padding: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   label { font-size: 16px; }
-  select, input[type='number'], input[type='text'], textarea { font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid #555; background: #fff; color: #111; }
+  select, input[type='number'], input[type='text'], textarea {
+    font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid #555; background: #fff; color: #111;
+  }
   input[type='number'] { width: 78px; }
   input[type='text'] { width: 180px; }
   textarea { width: 100%; min-height: 56px; resize: vertical; }
@@ -20,6 +22,11 @@
   #output { width: 100%; min-height: 220px; margin-top: 12px; padding: 12px; background: #000; color: #8ef58e; border: 1px solid #333; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.35; }
   .status { margin-top: 8px; color: #bdbdbd; font-size: 14px; }
   .hint { color: #bdbdbd; font-size: 14px; line-height: 1.4; margin-top: 8px; }
+  .queuebox { margin-top: 10px; background: #0f0f0f; border: 1px solid #333; border-radius: 10px; padding: 10px 12px; }
+  .queuehead { color: #bdbdbd; font-size: 14px; margin-bottom: 6px; }
+  .queueitem { font-size: 18px; line-height: 1.5; color: #ddd; word-break: break-word; }
+  .queueitem.current { font-weight: 800; color: #ffe66d; background: rgba(255,230,109,0.10); padding: 3px 6px; border-radius: 6px; }
+  .queueitem.done { color: #777; text-decoration: line-through; }
 </style>
 </head>
 <body>
@@ -43,7 +50,7 @@
     <div style="flex-basis:100%"></div>
 
     <label for="imgSrc">Image file:</label>
-    <input id="imgSrc" type="text" value="A_spiral.jpg" />
+    <input id="imgSrc" type="text" value="A.spiral.jpg" />
     <button id="loadImageBtn" type="button">Load Image</button>
     <input id="filePicker" type="file" accept="image/*" />
 
@@ -54,6 +61,11 @@
   </div>
 
   <div class="wrap">
+    <div class="queuebox">
+      <div class="queuehead">Tap queue</div>
+      <div id="queueDisplay"></div>
+    </div>
+
     <div class="board-wrap">
       <img id="board" alt="Board image">
       <canvas id="overlay"></canvas>
@@ -64,15 +76,14 @@
     <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
 
     <div class="hint">
-      Use <b>Load Image</b> after typing the exact image file name, or choose an image with the file picker.
-      Importing JSON restores points. If the JSON contains a temporary <code>blob:</code> image path, choose the image again with the file picker or type the file name and tap Load Image.
+      The Disk shows circles only. Labels stay off the Disk. After you press <b>Start Mapping</b>, the next tap label is highlighted in the queue above while the full list remains visible.
     </div>
   </div>
 
 <script>
 (() => {
-  const STORAGE_KEY_POINTS = 'coord_mapper_saved_points_v5';
-  const STORAGE_KEY_IMAGE = 'coord_mapper_image_v5';
+  const STORAGE_KEY_POINTS = 'coord_mapper_saved_points_v6';
+  const STORAGE_KEY_IMAGE = 'coord_mapper_image_v6';
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
   const ctx = overlay.getContext('2d');
@@ -83,9 +94,12 @@
   const statusEl = document.getElementById('status');
   const imgSrcEl = document.getElementById('imgSrc');
   const filePicker = document.getElementById('filePicker');
+  const queueDisplay = document.getElementById('queueDisplay');
+
   let points = {};
   let history = [];
   let queue = [];
+  let originalQueue = [];
   let objectURL = null;
 
   function setStatus(msg) { statusEl.textContent = msg; }
@@ -131,15 +145,6 @@
     ctx.lineWidth = 2;
     ctx.strokeStyle = p.mode === 'center' ? 'rgba(80,190,255,0.95)' : 'rgba(255,255,255,0.95)';
     ctx.stroke();
-    ctx.font = `${Math.max(11, 13 * scale)}px sans-serif`;
-    const text = label;
-    const tw = ctx.measureText(text).width;
-    const tx = c.x + r + 4;
-    const ty = c.y - 2;
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(tx - 2, ty - 12, tw + 6, 16);
-    ctx.fillStyle = '#ffe66d';
-    ctx.fillText(text, tx, ty);
   }
 
   function redrawAll() {
@@ -147,9 +152,34 @@
     Object.entries(points).forEach(([label, p]) => drawPoint(label, p));
   }
 
+  function parseLabels() {
+    return labelsEl.value.split(/[\n;]+/).map(s => s.trim()).filter(Boolean);
+  }
+
+  function renderQueue() {
+    const all = originalQueue.length ? originalQueue : parseLabels();
+    const current = queue.length ? queue[0] : null;
+    const doneCount = originalQueue.length - queue.length;
+    queueDisplay.innerHTML = '';
+    if (!all.length) {
+      queueDisplay.innerHTML = '<div class="queueitem">No labels entered.</div>';
+      return;
+    }
+    all.forEach((label, idx) => {
+      const div = document.createElement('div');
+      div.className = 'queueitem';
+      if (idx < doneCount) div.classList.add('done');
+      if (label === current && idx === doneCount) div.classList.add('current');
+      div.textContent = label;
+      queueDisplay.appendChild(div);
+    });
+  }
+
   function startMapping() {
-    queue = labelsEl.value.split(/[\n;]+/).map(s => s.trim()).filter(Boolean);
+    queue = parseLabels();
+    originalQueue = [...queue];
     setStatus(queue.length ? `Ready to place ${queue.length} label(s).` : 'No labels entered.');
+    renderQueue();
   }
 
   function exportJSON() {
@@ -189,6 +219,7 @@
         redrawAll();
         setStatus('JSON imported.');
       }
+      renderQueue();
     } catch (e) { alert('Invalid JSON.'); }
   }
 
@@ -208,6 +239,9 @@
   });
 
   document.getElementById('startBtn').addEventListener('click', startMapping);
+  labelsEl.addEventListener('input', () => {
+    if (!queue.length) renderQueue();
+  });
 
   overlay.addEventListener('click', (evt) => {
     if (!board.naturalWidth || !board.naturalHeight) { setStatus('Load the image first.'); return; }
@@ -220,6 +254,7 @@
     points[label] = point;
     savePoints();
     redrawAll();
+    renderQueue();
     setStatus(`Saved ${label} at (${coords.x}, ${coords.y}). ${queue.length} remaining.`);
   });
 
@@ -228,8 +263,10 @@
     if (!last) { setStatus('Nothing to undo.'); return; }
     if (last.type === 'add') delete points[last.label];
     else points[last.label] = last.oldValue;
+    if (originalQueue.length) queue.unshift(last.label);
     savePoints();
     redrawAll();
+    renderQueue();
     setStatus('Undo complete.');
   });
 
@@ -238,9 +275,11 @@
     points = {};
     history = [];
     queue = [];
+    originalQueue = [];
     savePoints();
     redrawAll();
     outputEl.value = '';
+    renderQueue();
     setStatus('All points cleared.');
   });
 
@@ -268,6 +307,7 @@
     imgSrcEl.value = savedImage;
     loadImageFromName(savedImage);
   }
+  renderQueue();
 })();
 </script>
 </body>

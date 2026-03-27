@@ -3,430 +3,150 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Coordinate Mapper v9</title>
+<title>Coordinate Mapper v10</title>
 <style>
-  body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:#111; color:#f2f2f2; }
-  .toolbar { position: sticky; top: 0; z-index: 10; background:#1c1c1c; border-bottom:1px solid #333; padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-  label { font-size:16px; }
-  select,input[type='number'],input[type='text'],textarea {
-    font-size:16px; padding:8px 10px; border-radius:10px; border:1px solid #555; background:#fff; color:#111;
-  }
-  input[type='number'] { width:78px; }
-  input[type='text'] { width:190px; }
-  textarea { width:100%; min-height:72px; resize:vertical; }
-  button { font-size:16px; padding:10px 14px; border-radius:999px; border:1px solid #666; background:#eee; color:#111; }
-  .wrap { max-width:980px; margin:0 auto; padding:10px; }
-  .board-wrap { position:relative; width:100%; background:#000; border:1px solid #444; overflow:hidden; min-height:300px; }
-  #board { display:block; width:100%; height:auto; max-width:100%; }
-  #overlay { position:absolute; inset:0; touch-action:manipulation; }
-  #output { width:100%; min-height:220px; margin-top:12px; padding:12px; background:#000; color:#8ef58e; border:1px solid #333; border-radius:10px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; line-height:1.35; }
-  .status { margin-top:8px; color:#bdbdbd; font-size:14px; }
-  .hint { color:#bdbdbd; font-size:14px; line-height:1.4; margin-top:8px; }
-  .marker-info { margin-top:8px; background:#0f0f0f; border:1px solid #333; border-radius:10px; padding:10px 12px; font-size:16px; line-height:1.45; }
-  .marker-info .current { font-weight:800; color:#ffe66d; }
-  .hoverTag {
-    position:absolute; pointer-events:none; background:rgba(0,0,0,0.82); color:#ffe66d; border:1px solid #666;
-    border-radius:8px; padding:6px 8px; font-size:16px; font-weight:700; display:none;
-    transform:translate(-50%,-140%); white-space:nowrap;
-  }
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#111;color:#f2f2f2}
+.toolbar{position:sticky;top:0;z-index:10;background:#1c1c1c;border-bottom:1px solid #333;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label{font-size:16px}
+select,input[type='number'],input[type='text']{font-size:16px;padding:8px 10px;border-radius:10px;border:1px solid #555;background:#fff;color:#111}
+input[type='number']{width:78px}
+input[type='text']{width:190px}
+button{font-size:16px;padding:10px 14px;border-radius:999px;border:1px solid #666;background:#eee;color:#111}
+.wrap{max-width:980px;margin:0 auto;padding:10px}
+.board-wrap{position:relative;width:100%;background:#000;border:1px solid #444;overflow:hidden;min-height:300px}
+#board{display:block;width:100%;height:auto;max-width:100%}
+#overlay{position:absolute;inset:0;touch-action:manipulation}
+#output{width:100%;min-height:220px;margin-top:12px;padding:12px;background:#000;color:#8ef58e;border:1px solid #333;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.35}
+.status{margin-top:8px;color:#bdbdbd;font-size:14px}
+.hint{color:#bdbdbd;font-size:14px;line-height:1.4;margin-top:8px}
+.marker-info{margin-top:8px;background:#0f0f0f;border:1px solid #333;border-radius:10px;padding:10px 12px;font-size:16px;line-height:1.45}
+.marker-info .current{font-weight:800;color:#ffe66d}
+.hoverTag{position:absolute;pointer-events:none;background:rgba(0,0,0,.82);color:#ffe66d;border:1px solid #666;border-radius:8px;padding:6px 8px;font-size:16px;font-weight:700;display:none;transform:translate(-50%,-140%);white-space:nowrap}
+.editor{width:100%;min-height:72px;border-radius:10px;border:1px solid #555;background:#fff;color:#111;padding:8px 10px;font-size:16px;line-height:1.45;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}
+.token.done{color:#777;text-decoration:line-through}
+.token.current{font-weight:800;background:#fff0a8;color:#111;padding:0 2px;border-radius:4px}
 </style>
 </head>
 <body>
-  <div class="toolbar">
-    <label for="mode">Mode:</label>
-    <select id="mode">
-      <option value="center">Compartment center</option>
-      <option value="symbol">Symbol slot</option>
-    </select>
+<div class="toolbar">
+<label for="mode">Mode:</label>
+<select id="mode"><option value="center">Compartment center</option><option value="symbol">Symbol slot</option></select>
+<label for="radius">Radius:</label>
+<input id="radius" type="number" value="12" min="1" max="100" step="1" />
+<button id="startBtn" type="button">Start Mapping</button>
+<button id="undoBtn" type="button">Undo</button>
+<button id="clearBtn" type="button">Clear All</button>
+<button id="exportBtn" type="button">Export JSON</button>
+<button id="copyBtn" type="button">Copy JSON</button>
+<button id="importBtn" type="button">Import JSON</button>
+<div style="flex-basis:100%"></div>
+<label for="imgSrc">Image file:</label>
+<input id="imgSrc" type="text" value="A.spiral.jpg" />
+<button id="loadImageBtn" type="button">Load Image</button>
+<input id="filePicker" type="file" accept="image/*" />
+<div style="flex-basis:100%"></div>
+<label for="labelsEditor">Labels:</label>
+<div id="labelsEditor" class="editor" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true"></div>
+</div>
 
-    <label for="radius">Radius:</label>
-    <input id="radius" type="number" value="12" min="1" max="100" step="1" />
-
-    <button id="startBtn" type="button">Start Mapping</button>
-    <button id="undoBtn" type="button">Undo</button>
-    <button id="clearBtn" type="button">Clear All</button>
-    <button id="exportBtn" type="button">Export JSON</button>
-    <button id="copyBtn" type="button">Copy JSON</button>
-    <button id="importBtn" type="button">Import JSON</button>
-
-    <div style="flex-basis:100%"></div>
-
-    <label for="imgSrc">Image file:</label>
-    <input id="imgSrc" type="text" value="A.spiral.jpg" />
-    <button id="loadImageBtn" type="button">Load Image</button>
-    <input id="filePicker" type="file" accept="image/*" />
-
-    <div style="flex-basis:100%"></div>
-
-    <label for="labels">Labels:</label>
-    <textarea id="labels" placeholder="Use ; or new lines, e.g. R4_S02_a; R4_S12_b; R4_S04_c"></textarea>
-  </div>
-
-  <div class="wrap">
-    <div class="marker-info">
-      Next tap: <span id="currentLabel" class="current">—</span><br>
-      Remaining: <span id="remainingCount">0</span>
-    </div>
-
-    <div class="board-wrap">
-      <img id="board" alt="Board image">
-      <canvas id="overlay"></canvas>
-      <div id="hoverTag" class="hoverTag"></div>
-    </div>
-
-    <div class="status" id="status">Ready.</div>
-    <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
-
-    <div class="hint">
-      Semicolons and new lines both work in Labels. Circles only are shown on the Disk.
-      Image auto-loads on page open using the saved file name, or the default <b>A.spiral.jpg</b>.
-      Existing saved points from earlier versions are also restored automatically.
-    </div>
-  </div>
+<div class="wrap">
+<div class="marker-info">Next tap: <span id="currentLabel" class="current">—</span><br>Remaining: <span id="remainingCount">0</span></div>
+<div class="board-wrap">
+<img id="board" alt="Board image">
+<canvas id="overlay"></canvas>
+<div id="hoverTag" class="hoverTag"></div>
+</div>
+<div class="status" id="status">Ready.</div>
+<textarea id="output" placeholder="Exported JSON appears here..."></textarea>
+<div class="hint">Semicolons and new lines both work in Labels. Circles only are shown on the Disk. Image auto-loads on page open using the saved file name or the default <b>A.spiral.jpg</b>. Existing saved points from earlier mapper versions are also restored automatically.</div>
+</div>
 
 <script>
 (() => {
-  const KEYS_POINTS = [
-    'coord_mapper_points_v9','coord_mapper_points_v8','coord_mapper_saved_points_v7',
-    'coord_mapper_saved_points_v6','coord_mapper_saved_points_v5','coord_mapper_saved_points_v4',
-    'coord_mapper_saved_points_v3','coordmap_points_v2'
-  ];
-  const KEYS_IMAGE = [
-    'coord_mapper_image_v9','coord_mapper_image_v8','coord_mapper_image_v7',
-    'coord_mapper_image_v6','coord_mapper_image_v5','coord_mapper_image_v4',
-    'coordmap_image_src_v2'
-  ];
-  const KEYS_OUTPUT = ['coord_mapper_output_v9','coord_mapper_output_v8'];
+const KEYS_POINTS=['coord_mapper_points_v10','coord_mapper_points_v9','coord_mapper_points_v8','coord_mapper_saved_points_v7','coord_mapper_saved_points_v6','coord_mapper_saved_points_v5','coord_mapper_saved_points_v4','coord_mapper_saved_points_v3','coordmap_points_v2'];
+const KEYS_IMAGE=['coord_mapper_image_v10','coord_mapper_image_v9','coord_mapper_image_v8','coord_mapper_image_v7','coord_mapper_image_v6','coord_mapper_image_v5','coord_mapper_image_v4','coordmap_image_src_v2'];
+const KEYS_OUTPUT=['coord_mapper_output_v10','coord_mapper_output_v9','coord_mapper_output_v8'];
+const SAVE_POINTS_KEY='coord_mapper_points_v10';
+const SAVE_IMAGE_KEY='coord_mapper_image_v10';
+const SAVE_OUTPUT_KEY='coord_mapper_output_v10';
 
-  const SAVE_POINTS_KEY = 'coord_mapper_points_v9';
-  const SAVE_IMAGE_KEY = 'coord_mapper_image_v9';
-  const SAVE_OUTPUT_KEY = 'coord_mapper_output_v9';
+const board=document.getElementById('board');
+const overlay=document.getElementById('overlay');
+const ctx=overlay.getContext('2d');
+const modeEl=document.getElementById('mode');
+const radiusEl=document.getElementById('radius');
+const labelsEditor=document.getElementById('labelsEditor');
+const outputEl=document.getElementById('output');
+const statusEl=document.getElementById('status');
+const imgSrcEl=document.getElementById('imgSrc');
+const filePicker=document.getElementById('filePicker');
+const currentLabelEl=document.getElementById('currentLabel');
+const remainingCountEl=document.getElementById('remainingCount');
+const hoverTag=document.getElementById('hoverTag');
 
-  const board = document.getElementById('board');
-  const overlay = document.getElementById('overlay');
-  const ctx = overlay.getContext('2d');
-  const modeEl = document.getElementById('mode');
-  const radiusEl = document.getElementById('radius');
-  const labelsEl = document.getElementById('labels');
-  const outputEl = document.getElementById('output');
-  const statusEl = document.getElementById('status');
-  const imgSrcEl = document.getElementById('imgSrc');
-  const filePicker = document.getElementById('filePicker');
-  const currentLabelEl = document.getElementById('currentLabel');
-  const remainingCountEl = document.getElementById('remainingCount');
-  const hoverTag = document.getElementById('hoverTag');
+let points={}, history=[], queue=[], originalTokens=[], objectURL=null, holdTimer=null, rawLabels='';
 
-  let points = {};
-  let history = [];
-  let queue = [];
-  let originalQueue = [];
-  let objectURL = null;
-  let holdTimer = null;
+function firstStored(keys){for(const k of keys){const v=localStorage.getItem(k); if(v) return v;} return '';}
+function setStatus(msg){statusEl.textContent=msg;}
+function savePoints(){localStorage.setItem(SAVE_POINTS_KEY,JSON.stringify(points));}
+function loadPoints(){const raw=firstStored(KEYS_POINTS); if(!raw){points={};return;} try{points=JSON.parse(raw)||{};}catch(e){points={};}}
+function saveImageName(name){localStorage.setItem(SAVE_IMAGE_KEY,name);}
+function loadSavedImageName(){return firstStored(KEYS_IMAGE);}
+function saveOutput(){localStorage.setItem(SAVE_OUTPUT_KEY,outputEl.value||'');}
+function loadOutput(){outputEl.value=firstStored(KEYS_OUTPUT)||'';}
 
-  function firstStored(keys) {
-    for (const k of keys) {
-      const v = localStorage.getItem(k);
-      if (v) return v;
-    }
-    return '';
-  }
+function fitCanvas(){const rect=board.getBoundingClientRect(); overlay.width=Math.round(rect.width); overlay.height=Math.round(rect.height); redrawAll();}
+function eventToImageCoords(evt){const rect=overlay.getBoundingClientRect(); const x=(evt.clientX-rect.left)*(board.naturalWidth/rect.width); const y=(evt.clientY-rect.top)*(board.naturalHeight/rect.height); return {x:Math.round(x),y:Math.round(y)};}
+function imageToCanvas(x,y){return {x:x*(overlay.width/board.naturalWidth), y:y*(overlay.height/board.naturalHeight)};}
+function drawPoint(label,p){const c=imageToCanvas(p.x,p.y); const scale=overlay.width/board.naturalWidth; const r=Math.max(4,p.r*scale); ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2); ctx.fillStyle=p.mode==='center'?'rgba(0,140,255,.28)':'rgba(255,70,70,.35)'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle=p.mode==='center'?'rgba(80,190,255,.95)':'rgba(255,255,255,.95)'; ctx.stroke();}
+function redrawAll(){ctx.clearRect(0,0,overlay.width,overlay.height); Object.entries(points).forEach(([label,p])=>drawPoint(label,p));}
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function tokenizeRaw(input){const parts=input.split(/([;\n])/); const tokens=[]; for(const part of parts){ if(part===';'||part==='\n') tokens.push({type:'sep',text:part}); else if(part.length){ const trimmed=part.trim(); if(trimmed) tokens.push({type:'label',text:trimmed}); } } return tokens;}
+function getLabelsFromRaw(input){return input.split(/[;\n]+/).map(s=>s.trim()).filter(Boolean);}
+function editorText(){return labelsEditor.innerText.replace(/\u00A0/g,' ');}
+function renderEditorFromTokens(tokens,currentIndex=-1){let labelSeen=0, html=''; for(const token of tokens){ if(token.type==='sep'){ html+= token.text==='\n' ? '<br>' : '; '; } else { let cls='token'; if(labelSeen<currentIndex) cls+=' done'; if(labelSeen===currentIndex) cls+=' current'; html+= `<span class="${cls}">${escapeHtml(token.text)}</span>`; labelSeen++; } } labelsEditor.innerHTML=html||'';}
+function refreshLabelUI(){const current=queue.length?queue[0]:''; currentLabelEl.textContent=current||'—'; remainingCountEl.textContent=String(queue.length); if(!originalTokens.length){ rawLabels=editorText(); return; } const currentIndex=originalTokens.filter(t=>t.type==='label').length-queue.length; renderEditorFromTokens(originalTokens,currentIndex);}
+function startMapping(){rawLabels=editorText(); originalTokens=tokenizeRaw(rawLabels); queue=getLabelsFromRaw(rawLabels); setStatus(queue.length?`Ready to place ${queue.length} label(s).`:'No labels entered.'); refreshLabelUI();}
+function exportJSON(){const obj={image:{file:imgSrcEl.value.trim(),width:board.naturalWidth||0,height:board.naturalHeight||0},points}; outputEl.value=JSON.stringify(obj,null,2); saveOutput(); setStatus('JSON exported.');}
+function loadImageFromName(src){if(!src){setStatus('Enter an image file name first.'); return;} board.onload=()=>{fitCanvas(); saveImageName(src); setStatus(`Loaded image: ${src}`);}; board.onerror=()=>{setStatus(`Could not load image: ${src}`); alert('Image could not be loaded. Check the file name and extension exactly.');}; board.src=src;}
+function clearObjectURL(){if(objectURL){URL.revokeObjectURL(objectURL); objectURL=null;}}
+function importJSON(){const pasted=prompt('Paste previously exported JSON here:'); if(!pasted) return; try{const obj=JSON.parse(pasted); points=obj.points||{}; savePoints(); outputEl.value=JSON.stringify(obj,null,2); saveOutput(); if(obj.image&&obj.image.file){imgSrcEl.value=obj.image.file; if(!String(obj.image.file).startsWith('blob:')) loadImageFromName(obj.image.file); else {redrawAll(); setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.');}} else {redrawAll(); setStatus('JSON imported.');} refreshLabelUI();}catch(e){alert('Invalid JSON.');}}
+function findNearestPointLabel(clientX,clientY){if(!board.naturalWidth||!board.naturalHeight) return null; const rect=overlay.getBoundingClientRect(); const cx=clientX-rect.left, cy=clientY-rect.top; let best=null,bestDist=Infinity; for(const [label,p] of Object.entries(points)){const c=imageToCanvas(p.x,p.y); const dist=Math.hypot(c.x-cx,c.y-cy); const threshold=Math.max(18,(p.r||8)*(overlay.width/board.naturalWidth)+10); if(dist<=threshold&&dist<bestDist){bestDist=dist; best={label,x:c.x,y:c.y};}} return best;}
+function showHoverTag(clientX,clientY){const found=findNearestPointLabel(clientX,clientY); if(!found) return; hoverTag.textContent=found.label; hoverTag.style.left=`${found.x}px`; hoverTag.style.top=`${found.y}px`; hoverTag.style.display='block';}
+function hideHoverTag(){hoverTag.style.display='none';}
 
-  function setStatus(msg) { statusEl.textContent = msg; }
-  function savePoints() { localStorage.setItem(SAVE_POINTS_KEY, JSON.stringify(points)); }
-  function loadPoints() {
-    const raw = firstStored(KEYS_POINTS);
-    if (!raw) { points = {}; return; }
-    try { points = JSON.parse(raw) || {}; } catch(e) { points = {}; }
-  }
-  function saveImageName(name) { localStorage.setItem(SAVE_IMAGE_KEY, name); }
-  function loadSavedImageName() { return firstStored(KEYS_IMAGE); }
-  function saveOutput() { localStorage.setItem(SAVE_OUTPUT_KEY, outputEl.value || ''); }
-  function loadOutput() { outputEl.value = firstStored(KEYS_OUTPUT) || ''; }
+document.getElementById('loadImageBtn').addEventListener('click',()=>{clearObjectURL(); loadImageFromName(imgSrcEl.value.trim());});
+filePicker.addEventListener('change',(e)=>{const file=e.target.files&&e.target.files[0]; if(!file) return; clearObjectURL(); objectURL=URL.createObjectURL(file); imgSrcEl.value=file.name; board.onload=()=>{fitCanvas(); setStatus(`Loaded image from file picker: ${file.name}`);}; board.src=objectURL;});
+document.getElementById('startBtn').addEventListener('click',startMapping);
+labelsEditor.addEventListener('input',()=>{ if(!queue.length) rawLabels=editorText(); });
 
-  function fitCanvas() {
-    const rect = board.getBoundingClientRect();
-    overlay.width = Math.round(rect.width);
-    overlay.height = Math.round(rect.height);
-    redrawAll();
-  }
+overlay.addEventListener('click',(evt)=>{if(!board.naturalWidth||!board.naturalHeight){setStatus('Load the image first.'); return;} if(!queue.length){setStatus('Enter labels and tap Start Mapping first.'); return;} const label=queue.shift(); const coords=eventToImageCoords(evt); const point={x:coords.x,y:coords.y,r:Number(radiusEl.value)||12,mode:modeEl.value}; if(points[label]) history.push({type:'replace',label,oldValue:{...points[label]}}); else history.push({type:'add',label}); points[label]=point; savePoints(); redrawAll(); refreshLabelUI(); setStatus(`Saved ${label} at (${coords.x}, ${coords.y}). ${queue.length} remaining.`);});
 
-  function eventToImageCoords(evt) {
-    const rect = overlay.getBoundingClientRect();
-    const x = (evt.clientX - rect.left) * (board.naturalWidth / rect.width);
-    const y = (evt.clientY - rect.top) * (board.naturalHeight / rect.height);
-    return { x: Math.round(x), y: Math.round(y) };
-  }
+function pointerDown(e){const pt=e.touches?e.touches[0]:e; hideHoverTag(); holdTimer=setTimeout(()=>showHoverTag(pt.clientX,pt.clientY),450);}
+function pointerUp(){clearTimeout(holdTimer); setTimeout(hideHoverTag,700);}
+overlay.addEventListener('mousedown',pointerDown);
+overlay.addEventListener('touchstart',pointerDown,{passive:true});
+overlay.addEventListener('mouseup',pointerUp);
+overlay.addEventListener('mouseleave',pointerUp);
+overlay.addEventListener('touchend',pointerUp);
+overlay.addEventListener('touchcancel',pointerUp);
 
-  function imageToCanvas(x, y) {
-    return { x: x * (overlay.width / board.naturalWidth), y: y * (overlay.height / board.naturalHeight) };
-  }
+document.getElementById('undoBtn').addEventListener('click',()=>{const last=history.pop(); if(!last){setStatus('Nothing to undo.'); return;} if(last.type==='add') delete points[last.label]; else points[last.label]=last.oldValue; if(originalTokens.length) queue.unshift(last.label); savePoints(); redrawAll(); refreshLabelUI(); setStatus('Undo complete.');});
+document.getElementById('clearBtn').addEventListener('click',()=>{if(!confirm('Clear all mapped points?')) return; points={}; history=[]; queue=[]; originalTokens=[]; savePoints(); redrawAll(); outputEl.value=''; saveOutput(); labelsEditor.innerHTML=''; setStatus('All points cleared.'); refreshLabelUI();});
+document.getElementById('exportBtn').addEventListener('click',exportJSON);
+document.getElementById('copyBtn').addEventListener('click',async()=>{if(!outputEl.value.trim()) exportJSON(); try{await navigator.clipboard.writeText(outputEl.value); setStatus('JSON copied.');}catch(e){outputEl.focus(); outputEl.select(); document.execCommand('copy'); setStatus('JSON copied.');}});
+document.getElementById('importBtn').addEventListener('click',importJSON);
+outputEl.addEventListener('input',saveOutput);
+board.addEventListener('load',fitCanvas);
+window.addEventListener('resize',fitCanvas);
 
-  function drawPoint(label, p) {
-    const c = imageToCanvas(p.x, p.y);
-    const scale = overlay.width / board.naturalWidth;
-    const r = Math.max(4, p.r * scale);
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = p.mode === 'center' ? 'rgba(0,140,255,0.28)' : 'rgba(255,70,70,0.35)';
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = p.mode === 'center' ? 'rgba(80,190,255,0.95)' : 'rgba(255,255,255,0.95)';
-    ctx.stroke();
-  }
-
-  function redrawAll() {
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    Object.entries(points).forEach(([label, p]) => drawPoint(label, p));
-  }
-
-  function parseLabels() {
-    return labelsEl.value.split(/[;\n]+/).map(s => s.trim()).filter(Boolean);
-  }
-
-  function refreshLabelUI() {
-    const current = queue.length ? queue[0] : '';
-    currentLabelEl.textContent = current || '—';
-    remainingCountEl.textContent = String(queue.length);
-
-    const all = originalQueue.length ? originalQueue : parseLabels();
-    if (!all.length) return;
-
-    const doneCount = originalQueue.length ? (originalQueue.length - queue.length) : 0;
-
-    // keep existing content with line-by-line display for visibility
-    labelsEl.value = all.join('\n');
-
-    if (current && doneCount >= 0) {
-      let start = 0;
-      const lines = labelsEl.value.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        const lineStart = start;
-        const lineEnd = start + lines[i].length;
-        if (i === doneCount) {
-          try {
-            labelsEl.focus();
-            labelsEl.setSelectionRange(lineStart, lineEnd);
-          } catch(e) {}
-          break;
-        }
-        start = lineEnd + 1;
-      }
-    }
-  }
-
-  function startMapping() {
-    queue = parseLabels();
-    originalQueue = [...queue];
-    setStatus(queue.length ? `Ready to place ${queue.length} label(s).` : 'No labels entered.');
-    refreshLabelUI();
-  }
-
-  function exportJSON() {
-    const obj = {
-      image: {
-        file: imgSrcEl.value.trim(),
-        width: board.naturalWidth || 0,
-        height: board.naturalHeight || 0
-      },
-      points
-    };
-    outputEl.value = JSON.stringify(obj, null, 2);
-    saveOutput();
-    setStatus('JSON exported.');
-  }
-
-  function loadImageFromName(src) {
-    if (!src) { setStatus('Enter an image file name first.'); return; }
-    board.onload = () => {
-      fitCanvas();
-      saveImageName(src);
-      setStatus(`Loaded image: ${src}`);
-    };
-    board.onerror = () => {
-      setStatus(`Could not load image: ${src}`);
-      alert('Image could not be loaded. Check the file name and extension exactly.');
-    };
-    board.src = src;
-  }
-
-  function clearObjectURL() {
-    if (objectURL) { URL.revokeObjectURL(objectURL); objectURL = null; }
-  }
-
-  function importJSON() {
-    const pasted = prompt('Paste previously exported JSON here:');
-    if (!pasted) return;
-    try {
-      const obj = JSON.parse(pasted);
-      points = obj.points || {};
-      savePoints();
-      outputEl.value = JSON.stringify(obj, null, 2);
-      saveOutput();
-
-      if (obj.image && obj.image.file) {
-        imgSrcEl.value = obj.image.file;
-        if (!String(obj.image.file).startsWith('blob:')) {
-          loadImageFromName(obj.image.file);
-        } else {
-          redrawAll();
-          setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.');
-        }
-      } else {
-        redrawAll();
-        setStatus('JSON imported.');
-      }
-      refreshLabelUI();
-    } catch(e) {
-      alert('Invalid JSON.');
-    }
-  }
-
-  function findNearestPointLabel(clientX, clientY) {
-    if (!board.naturalWidth || !board.naturalHeight) return null;
-    const rect = overlay.getBoundingClientRect();
-    const cx = clientX - rect.left;
-    const cy = clientY - rect.top;
-    let best = null, bestDist = Infinity;
-    for (const [label, p] of Object.entries(points)) {
-      const c = imageToCanvas(p.x, p.y);
-      const dist = Math.hypot(c.x - cx, c.y - cy);
-      const threshold = Math.max(18, (p.r || 8) * (overlay.width / board.naturalWidth) + 10);
-      if (dist <= threshold && dist < bestDist) {
-        bestDist = dist;
-        best = { label, x: c.x, y: c.y };
-      }
-    }
-    return best;
-  }
-
-  function showHoverTag(clientX, clientY) {
-    const found = findNearestPointLabel(clientX, clientY);
-    if (!found) return;
-    hoverTag.textContent = found.label;
-    hoverTag.style.left = `${found.x}px`;
-    hoverTag.style.top = `${found.y}px`;
-    hoverTag.style.display = 'block';
-  }
-
-  function hideHoverTag() { hoverTag.style.display = 'none'; }
-
-  document.getElementById('loadImageBtn').addEventListener('click', () => {
-    clearObjectURL();
-    loadImageFromName(imgSrcEl.value.trim());
-  });
-
-  filePicker.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    clearObjectURL();
-    objectURL = URL.createObjectURL(file);
-    imgSrcEl.value = file.name;
-    board.onload = () => {
-      fitCanvas();
-      setStatus(`Loaded image from file picker: ${file.name}`);
-    };
-    board.src = objectURL;
-  });
-
-  document.getElementById('startBtn').addEventListener('click', startMapping);
-
-  labelsEl.addEventListener('input', () => {
-    if (!queue.length) {
-      originalQueue = [];
-      refreshLabelUI();
-    }
-  });
-
-  overlay.addEventListener('click', (evt) => {
-    if (!board.naturalWidth || !board.naturalHeight) { setStatus('Load the image first.'); return; }
-    if (!queue.length) { setStatus('Enter labels and tap Start Mapping first.'); return; }
-
-    const label = queue.shift();
-    const coords = eventToImageCoords(evt);
-    const point = { x: coords.x, y: coords.y, r: Number(radiusEl.value) || 12, mode: modeEl.value };
-
-    if (points[label]) history.push({ type: 'replace', label, oldValue: { ...points[label] } });
-    else history.push({ type: 'add', label });
-
-    points[label] = point;
-    savePoints();
-    redrawAll();
-    refreshLabelUI();
-    setStatus(`Saved ${label} at (${coords.x}, ${coords.y}). ${queue.length} remaining.`);
-  });
-
-  function pointerDown(e) {
-    const pt = e.touches ? e.touches[0] : e;
-    hideHoverTag();
-    holdTimer = setTimeout(() => showHoverTag(pt.clientX, pt.clientY), 450);
-  }
-  function pointerUp() {
-    clearTimeout(holdTimer);
-    setTimeout(hideHoverTag, 700);
-  }
-
-  overlay.addEventListener('mousedown', pointerDown);
-  overlay.addEventListener('touchstart', pointerDown, { passive: true });
-  overlay.addEventListener('mouseup', pointerUp);
-  overlay.addEventListener('mouseleave', pointerUp);
-  overlay.addEventListener('touchend', pointerUp);
-  overlay.addEventListener('touchcancel', pointerUp);
-
-  document.getElementById('undoBtn').addEventListener('click', () => {
-    const last = history.pop();
-    if (!last) { setStatus('Nothing to undo.'); return; }
-    if (last.type === 'add') delete points[last.label];
-    else points[last.label] = last.oldValue;
-    if (originalQueue.length) queue.unshift(last.label);
-    savePoints();
-    redrawAll();
-    refreshLabelUI();
-    setStatus('Undo complete.');
-  });
-
-  document.getElementById('clearBtn').addEventListener('click', () => {
-    if (!confirm('Clear all mapped points?')) return;
-    points = {};
-    history = [];
-    queue = [];
-    originalQueue = [];
-    savePoints();
-    redrawAll();
-    outputEl.value = '';
-    saveOutput();
-    refreshLabelUI();
-    setStatus('All points cleared.');
-  });
-
-  document.getElementById('exportBtn').addEventListener('click', exportJSON);
-
-  document.getElementById('copyBtn').addEventListener('click', async () => {
-    if (!outputEl.value.trim()) exportJSON();
-    try {
-      await navigator.clipboard.writeText(outputEl.value);
-      setStatus('JSON copied.');
-    } catch(e) {
-      outputEl.focus();
-      outputEl.select();
-      document.execCommand('copy');
-      setStatus('JSON copied.');
-    }
-  });
-
-  document.getElementById('importBtn').addEventListener('click', importJSON);
-
-  outputEl.addEventListener('input', saveOutput);
-  board.addEventListener('load', fitCanvas);
-  window.addEventListener('resize', fitCanvas);
-
-  loadPoints();
-  loadOutput();
-
-  const savedImage = loadSavedImageName() || imgSrcEl.value.trim() || 'A.spiral.jpg';
-  imgSrcEl.value = savedImage;
-  loadImageFromName(savedImage);
-
-  refreshLabelUI();
+loadPoints();
+loadOutput();
+const savedImage=loadSavedImageName()||imgSrcEl.value.trim()||'A.spiral.jpg';
+imgSrcEl.value=savedImage;
+loadImageFromName(savedImage);
+labelsEditor.innerHTML='';
+refreshLabelUI();
 })();
 </script>
 </body>

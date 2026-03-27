@@ -3,108 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Coordinate Mapper v8</title>
+<title>Coordinate Mapper v9</title>
 <style>
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    background: #111;
-    color: #f2f2f2;
+  body { margin: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:#111; color:#f2f2f2; }
+  .toolbar { position: sticky; top: 0; z-index: 10; background:#1c1c1c; border-bottom:1px solid #333; padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  label { font-size:16px; }
+  select,input[type='number'],input[type='text'],textarea {
+    font-size:16px; padding:8px 10px; border-radius:10px; border:1px solid #555; background:#fff; color:#111;
   }
-  .toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #1c1c1c;
-    border-bottom: 1px solid #333;
-    padding: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-  label { font-size: 16px; }
-  select, input[type='number'], input[type='text'], textarea {
-    font-size: 16px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid #555;
-    background: #fff;
-    color: #111;
-  }
-  input[type='number'] { width: 78px; }
-  input[type='text'] { width: 190px; }
-  textarea { width: 100%; min-height: 72px; resize: vertical; }
-  button {
-    font-size: 16px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    border: 1px solid #666;
-    background: #eee;
-    color: #111;
-  }
-  .wrap {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 10px;
-  }
-  .board-wrap {
-    position: relative;
-    width: 100%;
-    background: #000;
-    border: 1px solid #444;
-    overflow: hidden;
-    min-height: 300px;
-  }
-  #board {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-width: 100%;
-  }
-  #overlay {
-    position: absolute;
-    inset: 0;
-    touch-action: manipulation;
-  }
-  #output {
-    width: 100%;
-    min-height: 220px;
-    margin-top: 12px;
-    padding: 12px;
-    background: #000;
-    color: #8ef58e;
-    border: 1px solid #333;
-    border-radius: 10px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-  .status { margin-top: 8px; color: #bdbdbd; font-size: 14px; }
-  .hint { color: #bdbdbd; font-size: 14px; line-height: 1.4; margin-top: 8px; }
-  .marker-info {
-    margin-top: 8px;
-    background: #0f0f0f;
-    border: 1px solid #333;
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-size: 16px;
-    line-height: 1.45;
-  }
-  .marker-info .current { font-weight: 800; color: #ffe66d; }
+  input[type='number'] { width:78px; }
+  input[type='text'] { width:190px; }
+  textarea { width:100%; min-height:72px; resize:vertical; }
+  button { font-size:16px; padding:10px 14px; border-radius:999px; border:1px solid #666; background:#eee; color:#111; }
+  .wrap { max-width:980px; margin:0 auto; padding:10px; }
+  .board-wrap { position:relative; width:100%; background:#000; border:1px solid #444; overflow:hidden; min-height:300px; }
+  #board { display:block; width:100%; height:auto; max-width:100%; }
+  #overlay { position:absolute; inset:0; touch-action:manipulation; }
+  #output { width:100%; min-height:220px; margin-top:12px; padding:12px; background:#000; color:#8ef58e; border:1px solid #333; border-radius:10px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; line-height:1.35; }
+  .status { margin-top:8px; color:#bdbdbd; font-size:14px; }
+  .hint { color:#bdbdbd; font-size:14px; line-height:1.4; margin-top:8px; }
+  .marker-info { margin-top:8px; background:#0f0f0f; border:1px solid #333; border-radius:10px; padding:10px 12px; font-size:16px; line-height:1.45; }
+  .marker-info .current { font-weight:800; color:#ffe66d; }
   .hoverTag {
-    position: absolute;
-    pointer-events: none;
-    background: rgba(0,0,0,0.82);
-    color: #ffe66d;
-    border: 1px solid #666;
-    border-radius: 8px;
-    padding: 6px 8px;
-    font-size: 16px;
-    font-weight: 700;
-    display: none;
-    transform: translate(-50%, -140%);
-    white-space: nowrap;
+    position:absolute; pointer-events:none; background:rgba(0,0,0,0.82); color:#ffe66d; border:1px solid #666;
+    border-radius:8px; padding:6px 8px; font-size:16px; font-weight:700; display:none;
+    transform:translate(-50%,-140%); white-space:nowrap;
   }
 </style>
 </head>
@@ -152,23 +75,32 @@
     </div>
 
     <div class="status" id="status">Ready.</div>
-
     <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
 
     <div class="hint">
-      Circles only are shown on the Disk. Labels stay off the Disk.
-      Use <b>;</b> or new lines in the Labels box.
-      The current label is highlighted by selection inside the existing Labels box and also shown above.
-      Tap-and-hold on a circle to see its stored label temporarily.
-      Image name and mapped points auto-restore on reload.
+      Semicolons and new lines both work in Labels. Circles only are shown on the Disk.
+      Image auto-loads on page open using the saved file name, or the default <b>A.spiral.jpg</b>.
+      Existing saved points from earlier versions are also restored automatically.
     </div>
   </div>
 
 <script>
 (() => {
-  const STORAGE_KEY_POINTS = 'coord_mapper_points_v8';
-  const STORAGE_KEY_IMAGE = 'coord_mapper_image_v8';
-  const STORAGE_KEY_OUTPUT = 'coord_mapper_output_v8';
+  const KEYS_POINTS = [
+    'coord_mapper_points_v9','coord_mapper_points_v8','coord_mapper_saved_points_v7',
+    'coord_mapper_saved_points_v6','coord_mapper_saved_points_v5','coord_mapper_saved_points_v4',
+    'coord_mapper_saved_points_v3','coordmap_points_v2'
+  ];
+  const KEYS_IMAGE = [
+    'coord_mapper_image_v9','coord_mapper_image_v8','coord_mapper_image_v7',
+    'coord_mapper_image_v6','coord_mapper_image_v5','coord_mapper_image_v4',
+    'coordmap_image_src_v2'
+  ];
+  const KEYS_OUTPUT = ['coord_mapper_output_v9','coord_mapper_output_v8'];
+
+  const SAVE_POINTS_KEY = 'coord_mapper_points_v9';
+  const SAVE_IMAGE_KEY = 'coord_mapper_image_v9';
+  const SAVE_OUTPUT_KEY = 'coord_mapper_output_v9';
 
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
@@ -191,31 +123,25 @@
   let objectURL = null;
   let holdTimer = null;
 
-  function setStatus(msg) { statusEl.textContent = msg; }
-
-  function savePoints() {
-    localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(points));
-  }
-  function loadPoints() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_POINTS);
-      points = raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      points = {};
+  function firstStored(keys) {
+    for (const k of keys) {
+      const v = localStorage.getItem(k);
+      if (v) return v;
     }
+    return '';
   }
-  function saveImageName(name) {
-    localStorage.setItem(STORAGE_KEY_IMAGE, name);
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+  function savePoints() { localStorage.setItem(SAVE_POINTS_KEY, JSON.stringify(points)); }
+  function loadPoints() {
+    const raw = firstStored(KEYS_POINTS);
+    if (!raw) { points = {}; return; }
+    try { points = JSON.parse(raw) || {}; } catch(e) { points = {}; }
   }
-  function loadSavedImageName() {
-    return localStorage.getItem(STORAGE_KEY_IMAGE) || '';
-  }
-  function saveOutput() {
-    localStorage.setItem(STORAGE_KEY_OUTPUT, outputEl.value || '');
-  }
-  function loadOutput() {
-    outputEl.value = localStorage.getItem(STORAGE_KEY_OUTPUT) || '';
-  }
+  function saveImageName(name) { localStorage.setItem(SAVE_IMAGE_KEY, name); }
+  function loadSavedImageName() { return firstStored(KEYS_IMAGE); }
+  function saveOutput() { localStorage.setItem(SAVE_OUTPUT_KEY, outputEl.value || ''); }
+  function loadOutput() { outputEl.value = firstStored(KEYS_OUTPUT) || ''; }
 
   function fitCanvas() {
     const rect = board.getBoundingClientRect();
@@ -232,10 +158,7 @@
   }
 
   function imageToCanvas(x, y) {
-    return {
-      x: x * (overlay.width / board.naturalWidth),
-      y: y * (overlay.height / board.naturalHeight)
-    };
+    return { x: x * (overlay.width / board.naturalWidth), y: y * (overlay.height / board.naturalHeight) };
   }
 
   function drawPoint(label, p) {
@@ -257,10 +180,7 @@
   }
 
   function parseLabels() {
-    return labelsEl.value
-      .split(/[;\n]+/)
-      .map(s => s.trim())
-      .filter(Boolean);
+    return labelsEl.value.split(/[;\n]+/).map(s => s.trim()).filter(Boolean);
   }
 
   function refreshLabelUI() {
@@ -271,12 +191,14 @@
     const all = originalQueue.length ? originalQueue : parseLabels();
     if (!all.length) return;
 
+    const doneCount = originalQueue.length ? (originalQueue.length - queue.length) : 0;
+
+    // keep existing content with line-by-line display for visibility
     labelsEl.value = all.join('\n');
 
-    if (current) {
+    if (current && doneCount >= 0) {
       let start = 0;
       const lines = labelsEl.value.split('\n');
-      const doneCount = originalQueue.length - queue.length;
       for (let i = 0; i < lines.length; i++) {
         const lineStart = start;
         const lineEnd = start + lines[i].length;
@@ -284,7 +206,7 @@
           try {
             labelsEl.focus();
             labelsEl.setSelectionRange(lineStart, lineEnd);
-          } catch (e) {}
+          } catch(e) {}
           break;
         }
         start = lineEnd + 1;
@@ -314,10 +236,7 @@
   }
 
   function loadImageFromName(src) {
-    if (!src) {
-      setStatus('Enter an image file name first.');
-      return;
-    }
+    if (!src) { setStatus('Enter an image file name first.'); return; }
     board.onload = () => {
       fitCanvas();
       saveImageName(src);
@@ -331,10 +250,7 @@
   }
 
   function clearObjectURL() {
-    if (objectURL) {
-      URL.revokeObjectURL(objectURL);
-      objectURL = null;
-    }
+    if (objectURL) { URL.revokeObjectURL(objectURL); objectURL = null; }
   }
 
   function importJSON() {
@@ -360,7 +276,7 @@
         setStatus('JSON imported.');
       }
       refreshLabelUI();
-    } catch (e) {
+    } catch(e) {
       alert('Invalid JSON.');
     }
   }
@@ -370,9 +286,7 @@
     const rect = overlay.getBoundingClientRect();
     const cx = clientX - rect.left;
     const cy = clientY - rect.top;
-    let best = null;
-    let bestDist = Infinity;
-
+    let best = null, bestDist = Infinity;
     for (const [label, p] of Object.entries(points)) {
       const c = imageToCanvas(p.x, p.y);
       const dist = Math.hypot(c.x - cx, c.y - cy);
@@ -394,9 +308,7 @@
     hoverTag.style.display = 'block';
   }
 
-  function hideHoverTag() {
-    hoverTag.style.display = 'none';
-  }
+  function hideHoverTag() { hoverTag.style.display = 'none'; }
 
   document.getElementById('loadImageBtn').addEventListener('click', () => {
     clearObjectURL();
@@ -426,29 +338,15 @@
   });
 
   overlay.addEventListener('click', (evt) => {
-    if (!board.naturalWidth || !board.naturalHeight) {
-      setStatus('Load the image first.');
-      return;
-    }
-    if (!queue.length) {
-      setStatus('Enter labels and tap Start Mapping first.');
-      return;
-    }
+    if (!board.naturalWidth || !board.naturalHeight) { setStatus('Load the image first.'); return; }
+    if (!queue.length) { setStatus('Enter labels and tap Start Mapping first.'); return; }
 
     const label = queue.shift();
     const coords = eventToImageCoords(evt);
-    const point = {
-      x: coords.x,
-      y: coords.y,
-      r: Number(radiusEl.value) || 12,
-      mode: modeEl.value
-    };
+    const point = { x: coords.x, y: coords.y, r: Number(radiusEl.value) || 12, mode: modeEl.value };
 
-    if (points[label]) {
-      history.push({ type: 'replace', label, oldValue: { ...points[label] } });
-    } else {
-      history.push({ type: 'add', label });
-    }
+    if (points[label]) history.push({ type: 'replace', label, oldValue: { ...points[label] } });
+    else history.push({ type: 'add', label });
 
     points[label] = point;
     savePoints();
@@ -462,7 +360,6 @@
     hideHoverTag();
     holdTimer = setTimeout(() => showHoverTag(pt.clientX, pt.clientY), 450);
   }
-
   function pointerUp() {
     clearTimeout(holdTimer);
     setTimeout(hideHoverTag, 700);
@@ -477,15 +374,9 @@
 
   document.getElementById('undoBtn').addEventListener('click', () => {
     const last = history.pop();
-    if (!last) {
-      setStatus('Nothing to undo.');
-      return;
-    }
-    if (last.type === 'add') {
-      delete points[last.label];
-    } else {
-      points[last.label] = last.oldValue;
-    }
+    if (!last) { setStatus('Nothing to undo.'); return; }
+    if (last.type === 'add') delete points[last.label];
+    else points[last.label] = last.oldValue;
     if (originalQueue.length) queue.unshift(last.label);
     savePoints();
     redrawAll();
@@ -514,7 +405,7 @@
     try {
       await navigator.clipboard.writeText(outputEl.value);
       setStatus('JSON copied.');
-    } catch (e) {
+    } catch(e) {
       outputEl.focus();
       outputEl.select();
       document.execCommand('copy');
@@ -531,11 +422,10 @@
   loadPoints();
   loadOutput();
 
-  const savedImage = loadSavedImageName();
-  if (savedImage) {
-    imgSrcEl.value = savedImage;
-    loadImageFromName(savedImage);
-  }
+  const savedImage = loadSavedImageName() || imgSrcEl.value.trim() || 'A.spiral.jpg';
+  imgSrcEl.value = savedImage;
+  loadImageFromName(savedImage);
+
   refreshLabelUI();
 })();
 </script>

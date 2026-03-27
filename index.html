@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Coordinate Mapper v10</title>
+<title>Coordinate Mapper v11</title>
 <style>
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#111;color:#f2f2f2}
 .toolbar{position:sticky;top:0;z-index:10;background:#1c1c1c;border-bottom:1px solid #333;padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -58,17 +58,17 @@ button{font-size:16px;padding:10px 14px;border-radius:999px;border:1px solid #66
 </div>
 <div class="status" id="status">Ready.</div>
 <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
-<div class="hint">Semicolons and new lines both work in Labels. Circles only are shown on the Disk. Image auto-loads on page open using the saved file name or the default <b>A.spiral.jpg</b>. Existing saved points from earlier mapper versions are also restored automatically.</div>
+<div class="hint">Semicolons and new lines both work in Labels. Old strike-through formatting is removed automatically when you tap into the Labels area to type a new batch.</div>
 </div>
 
 <script>
 (() => {
-const KEYS_POINTS=['coord_mapper_points_v10','coord_mapper_points_v9','coord_mapper_points_v8','coord_mapper_saved_points_v7','coord_mapper_saved_points_v6','coord_mapper_saved_points_v5','coord_mapper_saved_points_v4','coord_mapper_saved_points_v3','coordmap_points_v2'];
-const KEYS_IMAGE=['coord_mapper_image_v10','coord_mapper_image_v9','coord_mapper_image_v8','coord_mapper_image_v7','coord_mapper_image_v6','coord_mapper_image_v5','coord_mapper_image_v4','coordmap_image_src_v2'];
-const KEYS_OUTPUT=['coord_mapper_output_v10','coord_mapper_output_v9','coord_mapper_output_v8'];
-const SAVE_POINTS_KEY='coord_mapper_points_v10';
-const SAVE_IMAGE_KEY='coord_mapper_image_v10';
-const SAVE_OUTPUT_KEY='coord_mapper_output_v10';
+const KEYS_POINTS=['coord_mapper_points_v11','coord_mapper_points_v10','coord_mapper_points_v9','coord_mapper_points_v8','coord_mapper_saved_points_v7','coord_mapper_saved_points_v6','coord_mapper_saved_points_v5','coord_mapper_saved_points_v4','coord_mapper_saved_points_v3','coordmap_points_v2'];
+const KEYS_IMAGE=['coord_mapper_image_v11','coord_mapper_image_v10','coord_mapper_image_v9','coord_mapper_image_v8','coord_mapper_image_v7','coord_mapper_image_v6','coord_mapper_image_v5','coord_mapper_image_v4','coordmap_image_src_v2'];
+const KEYS_OUTPUT=['coord_mapper_output_v11','coord_mapper_output_v10','coord_mapper_output_v9','coord_mapper_output_v8'];
+const SAVE_POINTS_KEY='coord_mapper_points_v11';
+const SAVE_IMAGE_KEY='coord_mapper_image_v11';
+const SAVE_OUTPUT_KEY='coord_mapper_output_v11';
 
 const board=document.getElementById('board');
 const overlay=document.getElementById('overlay');
@@ -84,7 +84,7 @@ const currentLabelEl=document.getElementById('currentLabel');
 const remainingCountEl=document.getElementById('remainingCount');
 const hoverTag=document.getElementById('hoverTag');
 
-let points={}, history=[], queue=[], originalTokens=[], objectURL=null, holdTimer=null, rawLabels='';
+let points={}, history=[], queue=[], originalTokens=[], objectURL=null, holdTimer=null;
 
 function firstStored(keys){for(const k of keys){const v=localStorage.getItem(k); if(v) return v;} return '';}
 function setStatus(msg){statusEl.textContent=msg;}
@@ -105,12 +105,13 @@ function tokenizeRaw(input){const parts=input.split(/([;\n])/); const tokens=[];
 function getLabelsFromRaw(input){return input.split(/[;\n]+/).map(s=>s.trim()).filter(Boolean);}
 function editorText(){return labelsEditor.innerText.replace(/\u00A0/g,' ');}
 function renderEditorFromTokens(tokens,currentIndex=-1){let labelSeen=0, html=''; for(const token of tokens){ if(token.type==='sep'){ html+= token.text==='\n' ? '<br>' : '; '; } else { let cls='token'; if(labelSeen<currentIndex) cls+=' done'; if(labelSeen===currentIndex) cls+=' current'; html+= `<span class="${cls}">${escapeHtml(token.text)}</span>`; labelSeen++; } } labelsEditor.innerHTML=html||'';}
-function refreshLabelUI(){const current=queue.length?queue[0]:''; currentLabelEl.textContent=current||'—'; remainingCountEl.textContent=String(queue.length); if(!originalTokens.length){ rawLabels=editorText(); return; } const currentIndex=originalTokens.filter(t=>t.type==='label').length-queue.length; renderEditorFromTokens(originalTokens,currentIndex);}
-function startMapping(){rawLabels=editorText(); originalTokens=tokenizeRaw(rawLabels); queue=getLabelsFromRaw(rawLabels); setStatus(queue.length?`Ready to place ${queue.length} label(s).`:'No labels entered.'); refreshLabelUI();}
+function refreshLabelUI(){const current=queue.length?queue[0]:''; currentLabelEl.textContent=current||'—'; remainingCountEl.textContent=String(queue.length); if(!originalTokens.length) return; const currentIndex=originalTokens.filter(t=>t.type==='label').length-queue.length; renderEditorFromTokens(originalTokens,currentIndex);}
+function clearEditorFormatting(){const text=editorText(); labelsEditor.innerText=text; originalTokens=[]; queue=[]; currentLabelEl.textContent='—'; remainingCountEl.textContent='0';}
+function startMapping(){const raw=editorText(); originalTokens=tokenizeRaw(raw); queue=getLabelsFromRaw(raw); setStatus(queue.length?`Ready to place ${queue.length} label(s).`:'No labels entered.'); refreshLabelUI();}
 function exportJSON(){const obj={image:{file:imgSrcEl.value.trim(),width:board.naturalWidth||0,height:board.naturalHeight||0},points}; outputEl.value=JSON.stringify(obj,null,2); saveOutput(); setStatus('JSON exported.');}
 function loadImageFromName(src){if(!src){setStatus('Enter an image file name first.'); return;} board.onload=()=>{fitCanvas(); saveImageName(src); setStatus(`Loaded image: ${src}`);}; board.onerror=()=>{setStatus(`Could not load image: ${src}`); alert('Image could not be loaded. Check the file name and extension exactly.');}; board.src=src;}
 function clearObjectURL(){if(objectURL){URL.revokeObjectURL(objectURL); objectURL=null;}}
-function importJSON(){const pasted=prompt('Paste previously exported JSON here:'); if(!pasted) return; try{const obj=JSON.parse(pasted); points=obj.points||{}; savePoints(); outputEl.value=JSON.stringify(obj,null,2); saveOutput(); if(obj.image&&obj.image.file){imgSrcEl.value=obj.image.file; if(!String(obj.image.file).startsWith('blob:')) loadImageFromName(obj.image.file); else {redrawAll(); setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.');}} else {redrawAll(); setStatus('JSON imported.');} refreshLabelUI();}catch(e){alert('Invalid JSON.');}}
+function importJSON(){const pasted=prompt('Paste previously exported JSON here:'); if(!pasted) return; try{const obj=JSON.parse(pasted); points=obj.points||{}; savePoints(); outputEl.value=JSON.stringify(obj,null,2); saveOutput(); if(obj.image&&obj.image.file){imgSrcEl.value=obj.image.file; if(!String(obj.image.file).startsWith('blob:')) loadImageFromName(obj.image.file); else {redrawAll(); setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.');}} else {redrawAll(); setStatus('JSON imported.');}}catch(e){alert('Invalid JSON.');}}
 function findNearestPointLabel(clientX,clientY){if(!board.naturalWidth||!board.naturalHeight) return null; const rect=overlay.getBoundingClientRect(); const cx=clientX-rect.left, cy=clientY-rect.top; let best=null,bestDist=Infinity; for(const [label,p] of Object.entries(points)){const c=imageToCanvas(p.x,p.y); const dist=Math.hypot(c.x-cx,c.y-cy); const threshold=Math.max(18,(p.r||8)*(overlay.width/board.naturalWidth)+10); if(dist<=threshold&&dist<bestDist){bestDist=dist; best={label,x:c.x,y:c.y};}} return best;}
 function showHoverTag(clientX,clientY){const found=findNearestPointLabel(clientX,clientY); if(!found) return; hoverTag.textContent=found.label; hoverTag.style.left=`${found.x}px`; hoverTag.style.top=`${found.y}px`; hoverTag.style.display='block';}
 function hideHoverTag(){hoverTag.style.display='none';}
@@ -118,7 +119,9 @@ function hideHoverTag(){hoverTag.style.display='none';}
 document.getElementById('loadImageBtn').addEventListener('click',()=>{clearObjectURL(); loadImageFromName(imgSrcEl.value.trim());});
 filePicker.addEventListener('change',(e)=>{const file=e.target.files&&e.target.files[0]; if(!file) return; clearObjectURL(); objectURL=URL.createObjectURL(file); imgSrcEl.value=file.name; board.onload=()=>{fitCanvas(); setStatus(`Loaded image from file picker: ${file.name}`);}; board.src=objectURL;});
 document.getElementById('startBtn').addEventListener('click',startMapping);
-labelsEditor.addEventListener('input',()=>{ if(!queue.length) rawLabels=editorText(); });
+
+labelsEditor.addEventListener('focus',()=>{if(!queue.length) clearEditorFormatting();});
+labelsEditor.addEventListener('input',()=>{if(!queue.length) clearEditorFormatting();});
 
 overlay.addEventListener('click',(evt)=>{if(!board.naturalWidth||!board.naturalHeight){setStatus('Load the image first.'); return;} if(!queue.length){setStatus('Enter labels and tap Start Mapping first.'); return;} const label=queue.shift(); const coords=eventToImageCoords(evt); const point={x:coords.x,y:coords.y,r:Number(radiusEl.value)||12,mode:modeEl.value}; if(points[label]) history.push({type:'replace',label,oldValue:{...points[label]}}); else history.push({type:'add',label}); points[label]=point; savePoints(); redrawAll(); refreshLabelUI(); setStatus(`Saved ${label} at (${coords.x}, ${coords.y}). ${queue.length} remaining.`);});
 
@@ -132,7 +135,7 @@ overlay.addEventListener('touchend',pointerUp);
 overlay.addEventListener('touchcancel',pointerUp);
 
 document.getElementById('undoBtn').addEventListener('click',()=>{const last=history.pop(); if(!last){setStatus('Nothing to undo.'); return;} if(last.type==='add') delete points[last.label]; else points[last.label]=last.oldValue; if(originalTokens.length) queue.unshift(last.label); savePoints(); redrawAll(); refreshLabelUI(); setStatus('Undo complete.');});
-document.getElementById('clearBtn').addEventListener('click',()=>{if(!confirm('Clear all mapped points?')) return; points={}; history=[]; queue=[]; originalTokens=[]; savePoints(); redrawAll(); outputEl.value=''; saveOutput(); labelsEditor.innerHTML=''; setStatus('All points cleared.'); refreshLabelUI();});
+document.getElementById('clearBtn').addEventListener('click',()=>{if(!confirm('Clear all mapped points?')) return; points={}; history=[]; queue=[]; originalTokens=[]; savePoints(); redrawAll(); outputEl.value=''; saveOutput(); labelsEditor.innerHTML=''; setStatus('All points cleared.'); currentLabelEl.textContent='—'; remainingCountEl.textContent='0';});
 document.getElementById('exportBtn').addEventListener('click',exportJSON);
 document.getElementById('copyBtn').addEventListener('click',async()=>{if(!outputEl.value.trim()) exportJSON(); try{await navigator.clipboard.writeText(outputEl.value); setStatus('JSON copied.');}catch(e){outputEl.focus(); outputEl.select(); document.execCommand('copy'); setStatus('JSON copied.');}});
 document.getElementById('importBtn').addEventListener('click',importJSON);
@@ -146,7 +149,6 @@ const savedImage=loadSavedImageName()||imgSrcEl.value.trim()||'A.spiral.jpg';
 imgSrcEl.value=savedImage;
 loadImageFromName(savedImage);
 labelsEditor.innerHTML='';
-refreshLabelUI();
 })();
 </script>
 </body>

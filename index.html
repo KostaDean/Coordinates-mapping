@@ -13,7 +13,7 @@
   }
   input[type='number'] { width: 78px; }
   input[type='text'] { width: 180px; }
-  textarea { width: 100%; min-height: 56px; resize: vertical; }
+  textarea { width: 100%; min-height: 64px; resize: vertical; }
   button { font-size: 16px; padding: 10px 14px; border-radius: 999px; border: 1px solid #666; background: #eee; color: #111; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 10px; }
   .board-wrap { position: relative; width: 100%; background: #000; border: 1px solid #444; overflow: hidden; min-height: 300px; }
@@ -22,11 +22,13 @@
   #output { width: 100%; min-height: 220px; margin-top: 12px; padding: 12px; background: #000; color: #8ef58e; border: 1px solid #333; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.35; }
   .status { margin-top: 8px; color: #bdbdbd; font-size: 14px; }
   .hint { color: #bdbdbd; font-size: 14px; line-height: 1.4; margin-top: 8px; }
-  .queuebox { margin-top: 10px; background: #0f0f0f; border: 1px solid #333; border-radius: 10px; padding: 10px 12px; }
-  .queuehead { color: #bdbdbd; font-size: 14px; margin-bottom: 6px; }
-  .queueitem { font-size: 18px; line-height: 1.5; color: #ddd; word-break: break-word; }
-  .queueitem.current { font-weight: 800; color: #ffe66d; background: rgba(255,230,109,0.10); padding: 3px 6px; border-radius: 6px; }
-  .queueitem.done { color: #777; text-decoration: line-through; }
+  .marker-info { margin-top: 8px; background: #0f0f0f; border: 1px solid #333; border-radius: 10px; padding: 10px 12px; font-size: 16px; line-height: 1.45; }
+  .marker-info .current { font-weight: 800; color: #ffe66d; }
+  .hoverTag {
+    position: absolute; pointer-events: none; background: rgba(0,0,0,0.82); color: #ffe66d; border: 1px solid #666;
+    border-radius: 8px; padding: 6px 8px; font-size: 16px; font-weight: 700; display: none;
+    transform: translate(-50%, -140%); white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -61,14 +63,16 @@
   </div>
 
   <div class="wrap">
-    <div class="queuebox">
-      <div class="queuehead">Tap queue</div>
-      <div id="queueDisplay"></div>
+    <div class="marker-info">
+      Next tap: <span id="currentLabel" class="current">—</span>
+      <br>
+      Remaining: <span id="remainingCount">0</span>
     </div>
 
-    <div class="board-wrap">
+    <div class="board-wrap" id="boardWrap">
       <img id="board" alt="Board image">
       <canvas id="overlay"></canvas>
+      <div id="hoverTag" class="hoverTag"></div>
     </div>
 
     <div class="status" id="status">Ready.</div>
@@ -76,14 +80,14 @@
     <textarea id="output" placeholder="Exported JSON appears here..."></textarea>
 
     <div class="hint">
-      The Disk shows circles only. Labels stay off the Disk. After you press <b>Start Mapping</b>, the next tap label is highlighted in the queue above while the full list remains visible.
+      The Disk shows circles only. The next label to tap is highlighted inside the existing Labels text area and also shown above. Tap-and-hold on a circle to see its label temporarily.
     </div>
   </div>
 
 <script>
 (() => {
-  const STORAGE_KEY_POINTS = 'coord_mapper_saved_points_v6';
-  const STORAGE_KEY_IMAGE = 'coord_mapper_image_v6';
+  const STORAGE_KEY_POINTS = 'coord_mapper_saved_points_v7';
+  const STORAGE_KEY_IMAGE = 'coord_mapper_image_v7';
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
   const ctx = overlay.getContext('2d');
@@ -94,13 +98,16 @@
   const statusEl = document.getElementById('status');
   const imgSrcEl = document.getElementById('imgSrc');
   const filePicker = document.getElementById('filePicker');
-  const queueDisplay = document.getElementById('queueDisplay');
+  const currentLabelEl = document.getElementById('currentLabel');
+  const remainingCountEl = document.getElementById('remainingCount');
+  const hoverTag = document.getElementById('hoverTag');
 
   let points = {};
   let history = [];
   let queue = [];
   let originalQueue = [];
   let objectURL = null;
+  let holdTimer = null;
 
   function setStatus(msg) { statusEl.textContent = msg; }
   function savePoints() { localStorage.setItem(STORAGE_KEY_POINTS, JSON.stringify(points)); }
@@ -128,10 +135,7 @@
   }
 
   function imageToCanvas(x, y) {
-    return {
-      x: x * (overlay.width / board.naturalWidth),
-      y: y * (overlay.height / board.naturalHeight)
-    };
+    return { x: x * (overlay.width / board.naturalWidth), y: y * (overlay.height / board.naturalHeight) };
   }
 
   function drawPoint(label, p) {
@@ -156,30 +160,35 @@
     return labelsEl.value.split(/[\n;]+/).map(s => s.trim()).filter(Boolean);
   }
 
-  function renderQueue() {
+  function refreshLabelBox() {
     const all = originalQueue.length ? originalQueue : parseLabels();
     const current = queue.length ? queue[0] : null;
-    const doneCount = originalQueue.length - queue.length;
-    queueDisplay.innerHTML = '';
-    if (!all.length) {
-      queueDisplay.innerHTML = '<div class="queueitem">No labels entered.</div>';
-      return;
+    const doneCount = originalQueue.length ? originalQueue.length - queue.length : 0;
+    currentLabelEl.textContent = current || '—';
+    remainingCountEl.textContent = String(queue.length);
+    if (!all.length) return;
+    labelsEl.value = all.join('\n');
+    if (current) {
+      let start = 0;
+      const lines = labelsEl.value.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const lineStart = start;
+        const lineEnd = start + lines[i].length;
+        if (i === doneCount) {
+          labelsEl.focus();
+          try { labelsEl.setSelectionRange(lineStart, lineEnd); } catch (e) {}
+          break;
+        }
+        start = lineEnd + 1;
+      }
     }
-    all.forEach((label, idx) => {
-      const div = document.createElement('div');
-      div.className = 'queueitem';
-      if (idx < doneCount) div.classList.add('done');
-      if (label === current && idx === doneCount) div.classList.add('current');
-      div.textContent = label;
-      queueDisplay.appendChild(div);
-    });
   }
 
   function startMapping() {
     queue = parseLabels();
     originalQueue = [...queue];
     setStatus(queue.length ? `Ready to place ${queue.length} label(s).` : 'No labels entered.');
-    renderQueue();
+    refreshLabelBox();
   }
 
   function exportJSON() {
@@ -209,19 +218,44 @@
       outputEl.value = JSON.stringify(obj, null, 2);
       if (obj.image && obj.image.file) {
         imgSrcEl.value = obj.image.file;
-        if (!String(obj.image.file).startsWith('blob:')) {
-          loadImageFromName(obj.image.file);
-        } else {
-          redrawAll();
-          setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.');
-        }
+        if (!String(obj.image.file).startsWith('blob:')) loadImageFromName(obj.image.file);
+        else { redrawAll(); setStatus('JSON imported. Image path is a temporary blob URL, so choose the image again with the file picker or type the file name and tap Load Image.'); }
       } else {
         redrawAll();
         setStatus('JSON imported.');
       }
-      renderQueue();
+      refreshLabelBox();
     } catch (e) { alert('Invalid JSON.'); }
   }
+
+  function findNearestPointLabel(clientX, clientY) {
+    if (!board.naturalWidth || !board.naturalHeight) return null;
+    const rect = overlay.getBoundingClientRect();
+    const cx = clientX - rect.left;
+    const cy = clientY - rect.top;
+    let best = null, bestDist = Infinity;
+    for (const [label, p] of Object.entries(points)) {
+      const c = imageToCanvas(p.x, p.y);
+      const dist = Math.hypot(c.x - cx, c.y - cy);
+      const threshold = Math.max(18, (p.r || 8) * (overlay.width / board.naturalWidth) + 10);
+      if (dist <= threshold && dist < bestDist) {
+        bestDist = dist;
+        best = { label, x: c.x, y: c.y };
+      }
+    }
+    return best;
+  }
+
+  function showHoverTag(clientX, clientY) {
+    const found = findNearestPointLabel(clientX, clientY);
+    if (!found) return;
+    hoverTag.textContent = found.label;
+    hoverTag.style.left = `${found.x}px`;
+    hoverTag.style.top = `${found.y}px`;
+    hoverTag.style.display = 'block';
+  }
+
+  function hideHoverTag() { hoverTag.style.display = 'none'; }
 
   document.getElementById('loadImageBtn').addEventListener('click', () => {
     clearObjectURL();
@@ -240,7 +274,10 @@
 
   document.getElementById('startBtn').addEventListener('click', startMapping);
   labelsEl.addEventListener('input', () => {
-    if (!queue.length) renderQueue();
+    if (!queue.length) {
+      originalQueue = [];
+      refreshLabelBox();
+    }
   });
 
   overlay.addEventListener('click', (evt) => {
@@ -254,9 +291,26 @@
     points[label] = point;
     savePoints();
     redrawAll();
-    renderQueue();
+    refreshLabelBox();
     setStatus(`Saved ${label} at (${coords.x}, ${coords.y}). ${queue.length} remaining.`);
   });
+
+  function pointerDown(e) {
+    const pt = e.touches ? e.touches[0] : e;
+    hideHoverTag();
+    holdTimer = setTimeout(() => showHoverTag(pt.clientX, pt.clientY), 450);
+  }
+  function pointerUp() {
+    clearTimeout(holdTimer);
+    setTimeout(hideHoverTag, 700);
+  }
+
+  overlay.addEventListener('mousedown', pointerDown);
+  overlay.addEventListener('touchstart', pointerDown, { passive: true });
+  overlay.addEventListener('mouseup', pointerUp);
+  overlay.addEventListener('mouseleave', pointerUp);
+  overlay.addEventListener('touchend', pointerUp);
+  overlay.addEventListener('touchcancel', pointerUp);
 
   document.getElementById('undoBtn').addEventListener('click', () => {
     const last = history.pop();
@@ -266,7 +320,7 @@
     if (originalQueue.length) queue.unshift(last.label);
     savePoints();
     redrawAll();
-    renderQueue();
+    refreshLabelBox();
     setStatus('Undo complete.');
   });
 
@@ -279,7 +333,7 @@
     savePoints();
     redrawAll();
     outputEl.value = '';
-    renderQueue();
+    refreshLabelBox();
     setStatus('All points cleared.');
   });
 
@@ -307,7 +361,7 @@
     imgSrcEl.value = savedImage;
     loadImageFromName(savedImage);
   }
-  renderQueue();
+  refreshLabelBox();
 })();
 </script>
 </body>

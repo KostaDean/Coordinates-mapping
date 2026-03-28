@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phaistos Disk Matrix Test Page</title>
+<style>
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #111;
+  color: #f2f2f2;
+}
+.wrap {
+  padding: 14px;
+}
+.card {
+  background: #181818;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+h1 {
+  margin: 0 0 10px 0;
+  font-size: 24px;
+}
+p {
+  margin: 6px 0;
+  color: #cfcfcf;
+  line-height: 1.45;
+}
+.matrix-wrap {
+  overflow: auto;
+  border: 1px solid #444;
+  border-radius: 12px;
+  background: #0f0f0f;
+}
+table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  table-layout: fixed;
+}
+th, td {
+  border: 1px solid rgba(255,255,255,0.12);
+  vertical-align: top;
+  padding: 6px 8px;
+}
+th {
+  background: #1e1e1e;
+  color: #fff3b0;
+  font-weight: 700;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+th:first-child, td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #1a1a1a;
+}
+thead th:first-child {
+  z-index: 4;
+}
+.rowhead {
+  width: 190px;
+  min-width: 190px;
+}
+.colhead {
+  width: 190px;
+  min-width: 190px;
+}
+.cell {
+  width: 160px;
+  min-width: 160px;
+  background: #141414;
+}
+.comp {
+  font-weight: 700;
+  color: #ffe36c;
+  margin-bottom: 4px;
+}
+.codes {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #d6d6d6;
+}
+.shared {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #bfe3ff;
+}
+.none {
+  color: #777;
+}
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #555;
+  background: #222;
+  color: #ddd;
+  margin-right: 6px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Phaistos Disk Matrix Test Page</h1>
+    <p>
+      <span class="badge">Rows = Rim cells</span>
+      <span class="badge">Columns = Track cells</span>
+      <span class="badge">Each matrix box = shared symbol codes</span>
+    </p>
+    <p>
+      Row headers show all symbols in each Rim cell. Column headers show all symbols in each Track cell.
+      Inside each matrix box, the shared symbol codes are listed with the Rim suffixes and Track suffixes.
+    </p>
+  </div>
+
+  <div class="matrix-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="rowhead">Rim \ Track</th>
+
+          <th class="colhead">
+            <div class="comp">T01</div>
+            <div class="codes">S39_a; S11_b</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T02</div>
+            <div class="codes">S02_a; S27_b; S25_c; S10_d; S23_e; S18_f</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T03</div>
+            <div class="codes">S23_a; S01_b</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T04</div>
+            <div class="codes">S02_a; S12_b; S31_c; S26_d</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T05</div>
+            <div class="codes">S02_a; S12_b; S27_c; S27_d; S35_e; S37_f; S21_g</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T06</div>
+            <div class="codes">S33_a; S23_b</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T07</div>
+            <div class="codes">S02_a; S12_b; S31_c; S26_d</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T08</div>
+            <div class="codes">S02_a; S27_b; S25_c; S10_d; S23_e; S18_f</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T09</div>
+            <div class="codes">S28_a; S01_b</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T10</div>
+            <div class="codes">S02_a; S12_b; S31_c; S26_d</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T11</div>
+            <div class="codes">S02_a; S12_b; S27_c; S14_d; S55_e; S18_f; S27_g</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T12</div>
+            <div class="codes">S06_a; S18_b; S17_c; S19_d</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T13</div>
+            <div class="codes">S31_a; S26_b; S12_c</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T14</div>
+            <div class="codes">S02_a; S12_b; S13_c; S01_d</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T15</div>
+            <div class="codes">S23_a; S19_b; S35_c</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T16</div>
+            <div class="codes">S10_a; S03_b; S38_c</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T17</div>
+            <div class="codes">S02_a; S12_b; S27_c; S27_d; S35_e; S37_f; S21_g</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T18</div>
+            <div class="codes">S13_a; S01_b; S37_c; S02_d; S03_e</div>
+          </th>
+
+          <th class="colhead">
+            <div class="comp">T19</div>
+            <div class="codes">S38_a</div>
+          </th>
+
+        </tr>
+      </thead>
+      <tbody>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R01</div>
+            <div class="codes">S37_a; S02_b; S12_c; S13_d; S01_e; S18_f</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S18 (R:f / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)<br>S37 (R:a / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S18 (R:f / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)<br>S18 (R:f / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S18 (R:f / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:d)<br>S02 (R:b / T:a)<br>S12 (R:c / T:b)<br>S13 (R:d / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:b / T:a)<br>S12 (R:c / T:b)<br>S37 (R:a / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)<br>S02 (R:b / T:d)<br>S13 (R:d / T:a)<br>S37 (R:a / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R02</div>
+            <div class="codes">S24_a; S40_b; S12_c</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:c / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R03</div>
+            <div class="codes">S29_a; S45_b; S07_c; S05_d; S01_e</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:e / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R04</div>
+            <div class="codes">S02_a; S12_b; S04_c; S50_d; S51_e</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:b / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R05</div>
+            <div class="codes">S27_a; S45_b; S07_c; S12_d</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)<br>S27 (R:a / T:c,d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)<br>S27 (R:a / T:c,g)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:d / T:b)<br>S27 (R:a / T:c,d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R06</div>
+            <div class="codes">S27_a; S44_b; S08_c</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:c,d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:c,g)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S27 (R:a / T:c,d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R07</div>
+            <div class="codes">S02_a; S12_b; S06_c; S18_d; S51_e</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S18 (R:d / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S18 (R:d / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)<br>S18 (R:d / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S06 (R:c / T:a)<br>S18 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:b / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R08</div>
+            <div class="codes">S31_a; S26_b; S35_c</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S26 (R:b / T:d)<br>S31 (R:a / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S35 (R:c / T:e)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S26 (R:b / T:d)<br>S31 (R:a / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S26 (R:b / T:d)<br>S31 (R:a / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S26 (R:b / T:b)<br>S31 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S35 (R:c / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S35 (R:c / T:e)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R09</div>
+            <div class="codes">S02_a; S12_b; S52_c; S19_d; S53_e</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S19 (R:d / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:b / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S19 (R:d / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R10</div>
+            <div class="codes">S01_a; S54_b; S40_c; S07_d</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:a / T:d)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S01 (R:a / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+        </tr>
+
+        <tr>
+          <th class="rowhead">
+            <div class="comp">R11</div>
+            <div class="codes">S02_a; S12_b; S55_c; S37_d; S38_e</div>
+          </th>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)<br>S37 (R:d / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)<br>S55 (R:c / T:e)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S12 (R:b / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared none">—</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S38 (R:e / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:a)<br>S12 (R:b / T:b)<br>S37 (R:d / T:f)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S02 (R:a / T:d)<br>S37 (R:d / T:c)</div>
+          </td>
+
+          <td class="cell">
+            <div class="shared">S38 (R:e / T:a)</div>
+          </td>
+
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

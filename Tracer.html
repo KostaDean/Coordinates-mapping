@@ -1,437 +1,710 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phaistos Disk Single-Player Monte Carlo by Staging Rim Cell</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Freehand Shape Tracer v5</title>
 <style>
-body {
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:#111;
-  color:#f2f2f2;
-}
-.wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
-.card {
-  background:#181818;
-  border:1px solid #333;
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:14px;
-}
-h1 { margin:0 0 10px 0; font-size:26px; }
-h2 { margin:0 0 8px 0; font-size:20px; color:#ffe36c; }
-p { line-height:1.45; color:#d3d3d3; }
-table {
-  border-collapse:collapse;
-  width:100%;
-}
-th, td {
-  border:1px solid rgba(255,255,255,0.12);
-  padding:8px 10px;
-  text-align:left;
-  vertical-align:top;
-}
-th {
-  background:#222;
-  color:#fff2b0;
-  position: sticky;
-  top: 0;
-}
-td {
-  background:#141414;
-}
-.symbols {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  color:#bfe3ff;
-}
-.grid {
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap:12px;
-}
-.good { color:#8de39f; font-weight:700; }
-.bad { color:#ffb0b0; font-weight:700; }
-.code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#bfe3ff; }
+  :root{
+    --bg:#121212; --panel:#1d1d1d; --text:#f2f2f2; --muted:#bdbdbd;
+    --line:#3a3a3a; --btn:#efefef; --btnText:#111; --accent:#7cc4ff;
+  }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); overscroll-behavior:none;
+  }
+  .bar{
+    position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:1px solid var(--line);
+    padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+  .bar label{font-size:15px}
+  input[type="text"],input[type="range"],select{
+    padding:8px 10px;border-radius:10px;border:1px solid #666;background:#fff;color:#111;font-size:16px
+  }
+  input[type="text"]{width:180px}
+  button{
+    border:1px solid #777;background:var(--btn);color:var(--btnText);
+    border-radius:999px;padding:10px 14px;font-size:16px
+  }
+  .wrap{max-width:1550px;margin:0 auto;padding:10px}
+  .hint,.status{color:var(--muted);font-size:14px;line-height:1.4}
+  .status{margin:8px 0}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px}
+  @media (max-width: 980px){.main{grid-template-columns:1fr}}
+  .canvasWrap{
+    position:relative;border:1px solid var(--line);background:#000;min-height:420px;overflow:auto;
+    touch-action:none;
+  }
+  canvas{display:block;max-width:none;touch-action:none}
+  .side{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px}
+  .side h3{margin:6px 0 10px 0;font-size:18px}
+  .shapeList{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#101010}
+  .shape{
+    padding:8px 10px;border-bottom:1px solid #2a2a2a;display:grid;grid-template-columns:1fr auto;
+    gap:8px;align-items:center;cursor:pointer
+  }
+  .shape:last-child{border-bottom:none}
+  .shape small{display:block;color:var(--muted)}
+  .shape.selected{background:#1b2a36;box-shadow:inset 0 0 0 1px var(--accent)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .sw{border:1px solid #666;border-radius:10px;padding:10px 8px;text-align:center;font-size:14px;cursor:pointer;background:#fff;color:#111}
+  textarea{
+    width:100%;min-height:180px;margin-top:10px;border-radius:10px;border:1px solid var(--line);
+    background:#0d0d0d;color:#92f092;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;line-height:1.35
+  }
+  .mini{font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;background:#273746;border:1px solid #446;padding:3px 7px;border-radius:999px;font-size:12px}
 </style>
 </head>
 <body>
+<div class="bar">
+  <label>Choose image:</label><input id="filePicker" type="file" accept="image/*" />
+  <label>Image name:</label><input id="imgName" type="text" placeholder="optional image name" />
+  <label>Label:</label><input id="labelInput" type="text" placeholder="e.g. R01 or Zone-A" />
+  <label>Mode:</label>
+  <select id="modeSelect">
+    <option value="freehand">Freehand</option>
+    <option value="point">Point-by-point</option>
+  </select>
+  <label>Stroke px:</label><input id="strokeWidth" type="range" min="1" max="12" step="1" value="2" />
+  <button id="startBtn" type="button">Start</button>
+  <button id="finishBtn" type="button">Finish & Save</button>
+  <button id="undoPointBtn" type="button">Undo Point</button>
+  <button id="cancelBtn" type="button">Cancel Current</button>
+  <button id="exportJsonBtn" type="button">Export JSON</button>
+  <button id="copyJsonBtn" type="button">Copy JSON</button>
+  <button id="importJsonBtn" type="button">Import JSON</button>
+  <button id="exportPngBtn" type="button">Export Overlay PNG</button>
+</div>
+
 <div class="wrap">
-  <div class="card">
-    <h1>Single-Player Monte Carlo by Staging Rim Cell</h1>
-    <p>This is the right design-analysis view: one player only, no crowding, no shared occupancy. Each row estimates the behavior of the game when a player starts from a fixed staging Rim cell. Simulations: <span class="code">10,000 runs per Rim cell</span>, cap <span class="code">5,000 throws</span>.</p>
+  <div class="hint">
+    v5 adds stable pinch zoom, pan, undo current point, cancel current trace, and point-by-point tracing.
+    Use two fingers to zoom or pan. In freehand mode, draw with one finger or stylus. In point mode, tap vertices.
   </div>
+  <div class="status" id="status">Choose an image to begin.</div>
 
-  <div class="grid">
-    <div class="card">
-      <h2>Side A headline</h2>
-      <p>Best win-rate staging: <span class="good">R11 (57.83%)</span></p>
-      <p>Worst win-rate staging: <span class="bad">R10 (48.04%)</span></p>
-      <p>Corrected end rule used: exact landing on <span class="code">T19</span> wins with no symbol match required there; <span class="code">T18</span> is fatal.</p>
+  <div class="main">
+    <div class="canvasWrap" id="canvasWrap">
+      <canvas id="canvas" width="1000" height="800"></canvas>
     </div>
-    <div class="card">
-      <h2>Side B headline</h2>
-      <p>Best win-rate staging: <span class="good">R01 (100.00%)</span></p>
-      <p>Worst win-rate staging: <span class="bad">R01 (100.00%)</span></p>
-      <p>Revised end rule used: overflow beyond <span class="code">T18</span> wins; no terminal symbol match required.</p>
-    </div>
-  </div>
 
-  
-    <div class="card">
-      <h2>Side A: single-player results by staging Rim cell</h2>
-      <p>Side A endgame = exact T19 completion, no match on T19; T18 is terminal failure.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Staging Rim</th>
-            <th>Symbols</th>
-            <th>Win rate</th>
-            <th>Trap / fail rate</th>
-            <th>Cap-no-finish rate</th>
-            <th>E[throws | win]</th>
-            <th>Median throws | win</th>
-            <th>Avg throws overall</th>
-            <th>Avg skipped throws</th>
-            <th>Avg overshoots</th>
-          </tr>
-        </thead>
-        <tbody>
-    
-          <tr>
-            <td><strong>R01</strong></td>
-            <td class="symbols">S37_a; S02_b; S12_c; S13_d; S01_e; S18_f</td>
-            <td>54.21%</td>
-            <td>45.79%</td>
-            <td>0.00%</td>
-            <td>10.1</td>
-            <td>6.0</td>
-            <td>9.0</td>
-            <td>5.5</td>
-            <td>4.6</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R02</strong></td>
-            <td class="symbols">S24_a; S40_b; S12_c</td>
-            <td>55.73%</td>
-            <td>44.27%</td>
-            <td>0.00%</td>
-            <td>11.2</td>
-            <td>8.0</td>
-            <td>10.4</td>
-            <td>7.0</td>
-            <td>4.6</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R03</strong></td>
-            <td class="symbols">S29_a; S45_b; S07_c; S05_d; S01_e</td>
-            <td>48.24%</td>
-            <td>51.76%</td>
-            <td>0.00%</td>
-            <td>14.3</td>
-            <td>13.0</td>
-            <td>14.0</td>
-            <td>11.0</td>
-            <td>1.3</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R04</strong></td>
-            <td class="symbols">S02_a; S12_b; S04_c; S50_d; S51_e</td>
-            <td>55.75%</td>
-            <td>44.25%</td>
-            <td>0.00%</td>
-            <td>10.6</td>
-            <td>7.0</td>
-            <td>9.8</td>
-            <td>6.3</td>
-            <td>4.6</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R05</strong></td>
-            <td class="symbols">S27_a; S45_b; S07_c; S12_d</td>
-            <td>55.08%</td>
-            <td>44.92%</td>
-            <td>0.00%</td>
-            <td>10.6</td>
-            <td>7.0</td>
-            <td>9.7</td>
-            <td>6.2</td>
-            <td>4.6</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R06</strong></td>
-            <td class="symbols">S27_a; S44_b; S08_c</td>
-            <td>51.06%</td>
-            <td>48.94%</td>
-            <td>0.00%</td>
-            <td>16.0</td>
-            <td>13.0</td>
-            <td>14.4</td>
-            <td>11.2</td>
-            <td>5.1</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R07</strong></td>
-            <td class="symbols">S02_a; S12_b; S06_c; S18_d; S51_e</td>
-            <td>54.93%</td>
-            <td>45.07%</td>
-            <td>0.00%</td>
-            <td>10.2</td>
-            <td>7.0</td>
-            <td>9.3</td>
-            <td>5.8</td>
-            <td>4.5</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R08</strong></td>
-            <td class="symbols">S31_a; S26_b; S35_c</td>
-            <td>56.29%</td>
-            <td>43.71%</td>
-            <td>0.00%</td>
-            <td>12.3</td>
-            <td>9.0</td>
-            <td>11.5</td>
-            <td>8.0</td>
-            <td>4.9</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R09</strong></td>
-            <td class="symbols">S02_a; S12_b; S52_c; S19_d; S53_e</td>
-            <td>55.77%</td>
-            <td>44.23%</td>
-            <td>0.00%</td>
-            <td>9.8</td>
-            <td>7.0</td>
-            <td>9.2</td>
-            <td>5.7</td>
-            <td>4.7</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R10</strong></td>
-            <td class="symbols">S01_a; S54_b; S40_c; S07_d</td>
-            <td>48.04%</td>
-            <td>51.96%</td>
-            <td>0.00%</td>
-            <td>14.3</td>
-            <td>13.0</td>
-            <td>14.0</td>
-            <td>11.1</td>
-            <td>1.4</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R11</strong></td>
-            <td class="symbols">S02_a; S12_b; S55_c; S37_d; S38_e</td>
-            <td>57.83%</td>
-            <td>42.17%</td>
-            <td>0.00%</td>
-            <td>10.5</td>
-            <td>7.0</td>
-            <td>9.6</td>
-            <td>6.3</td>
-            <td>5.1</td>
-          </tr>
-        
-        </tbody>
-      </table>
-    </div>
-    
-  
-    <div class="card">
-      <h2>Side B: single-player results by staging Rim cell</h2>
-      <p>Side B endgame = overflow completion beyond T18; no terminal symbol match required.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Staging Rim</th>
-            <th>Symbols</th>
-            <th>Win rate</th>
-            <th>Trap / fail rate</th>
-            <th>Cap-no-finish rate</th>
-            <th>E[throws | win]</th>
-            <th>Median throws | win</th>
-            <th>Avg throws overall</th>
-            <th>Avg skipped throws</th>
-            <th>Avg overshoots</th>
-          </tr>
-        </thead>
-        <tbody>
-    
-          <tr>
-            <td><strong>R01</strong></td>
-            <td class="symbols">S02_a; S12_b; S22_c; S20_d; S34_e</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>7.0</td>
-            <td>6.0</td>
-            <td>7.0</td>
-            <td>3.7</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R02</strong></td>
-            <td class="symbols">S27_a; S45_b; S07_c; S35_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>4.1</td>
-            <td>4.0</td>
-            <td>4.1</td>
-            <td>0.6</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R03</strong></td>
-            <td class="symbols">S02_a; S37_b; S23_c; S05_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>9.7</td>
-            <td>8.0</td>
-            <td>9.7</td>
-            <td>6.4</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R04</strong></td>
-            <td class="symbols">S22_a; S25_b; S27_c</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>8.4</td>
-            <td>7.0</td>
-            <td>8.4</td>
-            <td>5.2</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R05</strong></td>
-            <td class="symbols">S33_a; S24_b; S03_c; S12_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>21.0</td>
-            <td>17.0</td>
-            <td>21.0</td>
-            <td>17.7</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R06</strong></td>
-            <td class="symbols">S16_a; S23_b; S18_c; S43_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>20.3</td>
-            <td>17.0</td>
-            <td>20.3</td>
-            <td>17.1</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R07</strong></td>
-            <td class="symbols">S13_a; S01_b; S39_c; S33_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>29.1</td>
-            <td>23.0</td>
-            <td>29.1</td>
-            <td>25.6</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R08</strong></td>
-            <td class="symbols">S15_a; S07_b; S36_c; S06_d; S18_e</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>4.7</td>
-            <td>4.0</td>
-            <td>4.7</td>
-            <td>1.2</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R09</strong></td>
-            <td class="symbols">S22_a; S37_b; S42_c; S25_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>8.0</td>
-            <td>7.0</td>
-            <td>8.0</td>
-            <td>4.9</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R10</strong></td>
-            <td class="symbols">S07_a; S24_b; S40_c; S03_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>5.1</td>
-            <td>5.0</td>
-            <td>5.1</td>
-            <td>1.8</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R11</strong></td>
-            <td class="symbols">S02_a; S26_b; S36_c; S40_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>8.4</td>
-            <td>7.0</td>
-            <td>8.4</td>
-            <td>5.1</td>
-            <td>0.0</td>
-          </tr>
-        
-          <tr>
-            <td><strong>R12</strong></td>
-            <td class="symbols">S27_a; S25_b; S38_c; S01_d</td>
-            <td>100.00%</td>
-            <td>0.00%</td>
-            <td>0.00%</td>
-            <td>13.1</td>
-            <td>11.0</td>
-            <td>13.1</td>
-            <td>9.8</td>
-            <td>0.0</td>
-          </tr>
-        
-        </tbody>
-      </table>
-    </div>
-    
+    <div class="side">
+      <h3>Saved Shapes <span class="pill" id="selectedBadge">none selected</span></h3>
+      <div class="shapeList" id="shapeList"></div>
 
-  <div class="card">
-    <h2>Interpretive takeaway</h2>
-    <p>These tables isolate the board design itself by removing multiplayer crowding. They answer the right question for publication: not “does a crowded game finish?” but “how does each staging Rim cell behave under the rule system?” This is the proper base for A/B design comparison and for later symbol-removal experiments.</p>
+      <div class="row">
+        <button id="fitBtn" type="button">Fit</button>
+        <button id="zoomInBtn" type="button">Zoom In</button>
+        <button id="zoomOutBtn" type="button">Zoom Out</button>
+        <button id="resetViewBtn" type="button">Reset View</button>
+      </div>
+
+      <h3>Selected Shape Tools</h3>
+      <div class="mini">Tap a saved shape in the list, or tap inside a shape on the canvas.</div>
+      <div class="swatches" id="swatches"></div>
+      <div class="row">
+        <button id="renameBtn" type="button">Rename</button>
+        <button id="deleteSelectedBtn" type="button">Delete Selected</button>
+        <button id="undoSavedBtn" type="button">Undo Last Saved</button>
+        <button id="clearAllBtn" type="button">Clear All</button>
+      </div>
+
+      <textarea id="jsonOut" placeholder="Exported JSON appears here..."></textarea>
+    </div>
   </div>
 </div>
+
+<script>
+(() => {
+  const PRESETS = [
+    {name:"Player 1", fill:"rgba(232,107,107,0.45)", stroke:"rgba(232,107,107,0.95)"},
+    {name:"Player 2", fill:"rgba(104,204,127,0.45)", stroke:"rgba(104,204,127,0.95)"},
+    {name:"Legal Move", fill:"rgba(99,167,255,0.45)", stroke:"rgba(99,167,255,0.95)"},
+    {name:"Staging", fill:"rgba(255,255,255,0.38)", stroke:"rgba(255,255,255,0.95)"},
+    {name:"Warning", fill:"rgba(255,215,0,0.40)", stroke:"rgba(255,215,0,0.95)"},
+    {name:"Clear", fill:"rgba(0,0,0,0.00)", stroke:"rgba(255,255,255,0.95)"}
+  ];
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const canvasWrap = document.getElementById('canvasWrap');
+  const statusEl = document.getElementById('status');
+  const jsonOut = document.getElementById('jsonOut');
+  const shapeList = document.getElementById('shapeList');
+  const filePicker = document.getElementById('filePicker');
+  const imgNameEl = document.getElementById('imgName');
+  const labelInput = document.getElementById('labelInput');
+  const strokeWidthEl = document.getElementById('strokeWidth');
+  const swatches = document.getElementById('swatches');
+  const selectedBadge = document.getElementById('selectedBadge');
+  const modeSelect = document.getElementById('modeSelect');
+
+  let img = new Image();
+  let imgLoaded = false;
+  let imageFileName = "";
+  let imgNaturalWidth = 1000;
+  let imgNaturalHeight = 800;
+  let scale = 1;
+  let minScale = 0.2;
+  let maxScale = 12;
+  let offsetX = 0;
+  let offsetY = 0;
+  let objectURL = null;
+
+  let shapes = [];
+  let currentPath = [];
+  let tracing = false;
+  let drawing = false;
+  let selectedId = null;
+  let nextId = 1;
+
+  let activePointers = new Map();
+  let panStart = null;
+  let pinchStart = null;
+  let suppressClickSelection = false;
+
+  function setStatus(msg){ statusEl.textContent = msg; }
+  function revokeURL(){ if(objectURL){ URL.revokeObjectURL(objectURL); objectURL = null; } }
+  function selectedShape(){ return shapes.find(s => s.id === selectedId) || null; }
+
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+  function fitCanvas(){
+    if(!imgLoaded) return;
+    const maxW = Math.max(300, canvasWrap.clientWidth - 2);
+    const maxH = Math.max(300, window.innerHeight - 220);
+    scale = Math.min(maxW / imgNaturalWidth, maxH / imgNaturalHeight);
+    scale = clamp(scale, minScale, 2);
+    offsetX = 0;
+    offsetY = 0;
+    resizeCanvas();
+    redraw();
+  }
+
+  function resizeCanvas(){
+    canvas.width = Math.max(1, Math.round(imgNaturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(imgNaturalHeight * scale));
+  }
+
+  function redraw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(imgLoaded){
+      ctx.drawImage(img, offsetX, offsetY, imgNaturalWidth*scale, imgNaturalHeight*scale);
+    } else {
+      ctx.fillStyle = "#101010";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
+
+    for(const s of shapes){
+      const isSel = s.id === selectedId;
+      drawPath(s.points, s.fill, s.stroke || "rgba(255,255,255,0.9)", (s.strokeWidth || 2) + (isSel ? 1 : 0), true);
+      const c = centroid(s.points);
+      if(c){
+        ctx.fillStyle = "#fff";
+        ctx.font = (isSel ? "bold " : "") + "15px sans-serif";
+        ctx.fillText(s.label || "", c.x*scale + offsetX + 4, c.y*scale + offsetY - 4);
+      }
+      if(isSel){
+        const b = bbox(s.points);
+        ctx.strokeStyle = "rgba(255,227,108,0.95)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(b.minX*scale + offsetX, b.minY*scale + offsetY, (b.maxX-b.minX)*scale, (b.maxY-b.minY)*scale);
+      }
+    }
+
+    if(currentPath.length){
+      drawPath(currentPath, "rgba(255,255,0,0.18)", "rgba(255,255,0,0.95)", Number(strokeWidthEl.value)||2, modeSelect.value === 'point' ? false : false);
+      if(modeSelect.value === 'point'){
+        for(const p of currentPath) drawHandle(p);
+      }
+    }
+  }
+
+  function drawHandle(p){
+    const x = p.x*scale + offsetX, y = p.y*scale + offsetY;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI*2);
+    ctx.fillStyle = "#ffd54d";
+    ctx.fill();
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawPath(points, fill, stroke, strokeWidth, closed){
+    if(points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x * scale + offsetX, points[0].y * scale + offsetY);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x * scale + offsetX, points[i].y * scale + offsetY);
+    if(closed){
+      ctx.closePath();
+      if(fill && !fill.includes("0,0,0,0.00")){
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+    }
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  }
+
+  function centroid(points){
+    if(!points.length) return null;
+    let x=0, y=0;
+    for(const p of points){ x+=p.x; y+=p.y; }
+    return {x:x/points.length, y:y/points.length};
+  }
+
+  function bbox(points){
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of points){
+      if(p.x<minX) minX=p.x;
+      if(p.y<minY) minY=p.y;
+      if(p.x>maxX) maxX=p.x;
+      if(p.y>maxY) maxY=p.y;
+    }
+    return {minX,minY,maxX,maxY};
+  }
+
+  function pointInPolygon(pt, poly){
+    let inside = false;
+    for(let i=0, j=poly.length-1; i<poly.length; j=i++){
+      const xi=poly[i].x, yi=poly[i].y;
+      const xj=poly[j].x, yj=poly[j].y;
+      const intersect = ((yi > pt.y) !== (yj > pt.y)) &&
+                        (pt.x < (xj - xi) * (pt.y - yi) / ((yj - yi) || 1e-9) + xi);
+      if(intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function canvasToImage(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: Math.round((clientX - rect.left - offsetX) / scale),
+      y: Math.round((clientY - rect.top - offsetY) / scale)
+    };
+  }
+
+  function refreshList(){
+    shapeList.innerHTML = "";
+    for(let i=0;i<shapes.length;i++){
+      const s = shapes[i];
+      const div = document.createElement('div');
+      div.className = 'shape' + (s.id === selectedId ? ' selected' : '');
+      div.innerHTML = `<div><strong>${s.label || "(no label)"}</strong><small>${s.points.length} pts · ${s.type || "freehand"}</small></div><div>${i+1}</div>`;
+      div.addEventListener('click', () => {
+        selectedId = s.id;
+        labelInput.value = s.label || "";
+        selectedBadge.textContent = s.label || "selected";
+        refreshList();
+        redraw();
+      });
+      shapeList.appendChild(div);
+    }
+    if(!selectedShape()) selectedBadge.textContent = "none selected";
+  }
+
+  function exportObject(){
+    return {
+      image: { file: imageFileName || imgNameEl.value || "", width: imgNaturalWidth, height: imgNaturalHeight },
+      view: { scale, offsetX, offsetY },
+      shapes,
+      version: 5
+    };
+  }
+
+  function exportJSON(){
+    jsonOut.value = JSON.stringify(exportObject(), null, 2);
+  }
+
+  function applyPresetToSelected(preset){
+    const s = selectedShape();
+    if(!s){ setStatus("Select a saved shape first."); return; }
+    s.fill = preset.fill;
+    s.stroke = preset.stroke;
+    refreshList();
+    exportJSON();
+    redraw();
+    setStatus(`Applied ${preset.name}.`);
+  }
+
+  PRESETS.forEach((p) => {
+    const btn = document.createElement('button');
+    btn.className = 'sw';
+    btn.type = 'button';
+    btn.textContent = p.name;
+    btn.style.background = p.fill.replace(/0\.\d+\)/, "0.75)");
+    btn.addEventListener('click', () => applyPresetToSelected(p));
+    swatches.appendChild(btn);
+  });
+
+  filePicker.addEventListener('change', () => {
+    const file = filePicker.files && filePicker.files[0];
+    if(!file) return;
+    revokeURL();
+    objectURL = URL.createObjectURL(file);
+    imageFileName = file.name;
+    imgNameEl.value = file.name;
+    img.onload = () => {
+      imgLoaded = true;
+      imgNaturalWidth = img.naturalWidth;
+      imgNaturalHeight = img.naturalHeight;
+      fitCanvas();
+      setStatus(`Loaded ${file.name}`);
+    };
+    img.src = objectURL;
+  });
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    if(!imgLoaded){ setStatus("Choose an image first."); return; }
+    currentPath = [];
+    tracing = true;
+    drawing = false;
+    setStatus(`Ready to trace ${labelInput.value || "(unlabeled)"} in ${modeSelect.value} mode.`);
+    redraw();
+  });
+
+  document.getElementById('finishBtn').addEventListener('click', () => {
+    if(!tracing || currentPath.length < 3){
+      setStatus("Draw or tap a shape first.");
+      return;
+    }
+    const preset = PRESETS[0];
+    const shape = {
+      id: nextId++,
+      label: labelInput.value.trim(),
+      fill: preset.fill,
+      stroke: preset.stroke,
+      strokeWidth: Number(strokeWidthEl.value) || 2,
+      points: currentPath.slice(),
+      type: modeSelect.value === 'point' ? "point" : "freehand"
+    };
+    shapes.push(shape);
+    selectedId = shape.id;
+    currentPath = [];
+    tracing = false;
+    drawing = false;
+    refreshList();
+    exportJSON();
+    redraw();
+    setStatus("Trace saved.");
+  });
+
+  document.getElementById('undoPointBtn').addEventListener('click', () => {
+    if(currentPath.length){
+      currentPath.pop();
+      redraw();
+      setStatus("Last current point removed.");
+    } else {
+      setStatus("No current points to undo.");
+    }
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    currentPath = [];
+    tracing = false;
+    drawing = false;
+    redraw();
+    setStatus("Current trace canceled.");
+  });
+
+  document.getElementById('deleteSelectedBtn').addEventListener('click', () => {
+    const s = selectedShape();
+    if(!s){ setStatus("Select a shape first."); return; }
+    shapes = shapes.filter(x => x.id !== s.id);
+    selectedId = null;
+    refreshList();
+    exportJSON();
+    redraw();
+    setStatus("Selected shape deleted.");
+  });
+
+  document.getElementById('renameBtn').addEventListener('click', () => {
+    const s = selectedShape();
+    if(!s){ setStatus("Select a shape first."); return; }
+    const name = prompt("Rename selected shape:", s.label || "");
+    if(name === null) return;
+    s.label = name.trim();
+    labelInput.value = s.label;
+    selectedBadge.textContent = s.label || "selected";
+    refreshList();
+    exportJSON();
+    redraw();
+    setStatus("Selected shape renamed.");
+  });
+
+  document.getElementById('undoSavedBtn').addEventListener('click', () => {
+    if(shapes.length){
+      const removed = shapes.pop();
+      if(selectedId === removed.id) selectedId = null;
+      refreshList();
+      exportJSON();
+      redraw();
+      setStatus("Last saved shape removed.");
+    } else {
+      setStatus("No saved shapes to undo.");
+    }
+  });
+
+  document.getElementById('clearAllBtn').addEventListener('click', () => {
+    if(!confirm("Clear all saved shapes?")) return;
+    shapes = [];
+    currentPath = [];
+    tracing = false;
+    drawing = false;
+    selectedId = null;
+    refreshList();
+    exportJSON();
+    redraw();
+    setStatus("All shapes cleared.");
+  });
+
+  function setView(newScale, newOffsetX, newOffsetY){
+    scale = clamp(newScale, minScale, maxScale);
+    offsetX = newOffsetX;
+    offsetY = newOffsetY;
+    resizeCanvas();
+    redraw();
+  }
+
+  document.getElementById('fitBtn').addEventListener('click', fitCanvas);
+  document.getElementById('zoomInBtn').addEventListener('click', () => {
+    if(!imgLoaded) return;
+    const centerX = canvas.width / 2, centerY = canvas.height / 2;
+    zoomAtCanvasPoint(centerX, centerY, 1.25);
+  });
+  document.getElementById('zoomOutBtn').addEventListener('click', () => {
+    if(!imgLoaded) return;
+    const centerX = canvas.width / 2, centerY = canvas.height / 2;
+    zoomAtCanvasPoint(centerX, centerY, 0.8);
+  });
+  document.getElementById('resetViewBtn').addEventListener('click', () => {
+    if(!imgLoaded) return;
+    fitCanvas();
+    setStatus("View reset.");
+  });
+
+  function zoomAtCanvasPoint(canvasX, canvasY, factor){
+    const imgX = (canvasX - offsetX) / scale;
+    const imgY = (canvasY - offsetY) / scale;
+    let newScale = clamp(scale * factor, minScale, maxScale);
+    offsetX = canvasX - imgX * newScale;
+    offsetY = canvasY - imgY * newScale;
+    scale = newScale;
+    resizeCanvas();
+    redraw();
+  }
+
+  canvas.addEventListener('wheel', (e) => {
+    if(!imgLoaded) return;
+    e.preventDefault();
+    zoomAtCanvasPoint(e.offsetX, e.offsetY, e.deltaY < 0 ? 1.12 : 0.89);
+  }, { passive:false });
+
+  canvas.addEventListener('pointerdown', (evt) => {
+    if(!imgLoaded) return;
+    canvas.setPointerCapture(evt.pointerId);
+    activePointers.set(evt.pointerId, {x: evt.clientX, y: evt.clientY});
+
+    if(activePointers.size === 2){
+      suppressClickSelection = true;
+      drawing = false;
+      const pts = [...activePointers.values()];
+      pinchStart = {
+        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+        scale,
+        midX: (pts[0].x + pts[1].x) / 2,
+        midY: (pts[0].y + pts[1].y) / 2,
+        offsetX,
+        offsetY
+      };
+      return;
+    }
+
+    if(tracing){
+      if(modeSelect.value === 'point'){
+        currentPath.push(canvasToImage(evt.clientX, evt.clientY));
+        redraw();
+        setStatus(`Point added. ${currentPath.length} points.`);
+        return;
+      } else {
+        drawing = true;
+        currentPath = [canvasToImage(evt.clientX, evt.clientY)];
+        redraw();
+        return;
+      }
+    }
+
+    panStart = {x: evt.clientX, y: evt.clientY, offsetX, offsetY};
+  });
+
+  canvas.addEventListener('pointermove', (evt) => {
+    if(!activePointers.has(evt.pointerId)) return;
+    activePointers.set(evt.pointerId, {x: evt.clientX, y: evt.clientY});
+
+    if(activePointers.size === 2 && pinchStart){
+      const pts = [...activePointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const rect = canvas.getBoundingClientRect();
+      const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
+      const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
+
+      const factor = dist / (pinchStart.dist || 1);
+      const newScale = clamp(pinchStart.scale * factor, minScale, maxScale);
+
+      const imgX = (midX - pinchStart.offsetX) / pinchStart.scale;
+      const imgY = (midY - pinchStart.offsetY) / pinchStart.scale;
+
+      offsetX = midX - imgX * newScale;
+      offsetY = midY - imgY * newScale;
+      scale = newScale;
+      resizeCanvas();
+      redraw();
+      return;
+    }
+
+    if(tracing && drawing && modeSelect.value === 'freehand'){
+      const p = canvasToImage(evt.clientX, evt.clientY);
+      const last = currentPath[currentPath.length - 1];
+      if(!last || Math.hypot(p.x-last.x, p.y-last.y) >= 2){
+        currentPath.push(p);
+        redraw();
+      }
+      return;
+    }
+
+    if(!tracing && panStart && activePointers.size === 1){
+      offsetX = panStart.offsetX + (evt.clientX - panStart.x);
+      offsetY = panStart.offsetY + (evt.clientY - panStart.y);
+      redraw();
+    }
+  });
+
+  canvas.addEventListener('pointerup', (evt) => {
+    activePointers.delete(evt.pointerId);
+
+    if(drawing && modeSelect.value === 'freehand'){
+      drawing = false;
+      setStatus(`Drawn ${currentPath.length} points. Tap Finish & Save.`);
+    } else if(!tracing && activePointers.size === 0 && !pinchStart && !panStart){
+      // noop
+    }
+
+    if(activePointers.size < 2) pinchStart = null;
+    if(activePointers.size === 0) panStart = null;
+    redraw();
+  });
+
+  canvas.addEventListener('pointercancel', (evt) => {
+    activePointers.delete(evt.pointerId);
+    if(activePointers.size < 2) pinchStart = null;
+    if(activePointers.size === 0){
+      panStart = null;
+      drawing = false;
+    }
+    redraw();
+  });
+
+  canvas.addEventListener('click', (evt) => {
+    if(!imgLoaded || tracing) return;
+    if(suppressClickSelection){
+      suppressClickSelection = false;
+      return;
+    }
+    const p = canvasToImage(evt.clientX, evt.clientY);
+    let found = null;
+    for(let i=shapes.length-1;i>=0;i--){
+      if(pointInPolygon(p, shapes[i].points)){ found = shapes[i]; break; }
+    }
+    selectedId = found ? found.id : null;
+    if(found){
+      labelInput.value = found.label || "";
+      selectedBadge.textContent = found.label || "selected";
+      setStatus(`Selected ${found.label || "shape"}.`);
+    } else {
+      selectedBadge.textContent = "none selected";
+      setStatus("No shape selected.");
+    }
+    refreshList();
+    redraw();
+  });
+
+  document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+  document.getElementById('copyJsonBtn').addEventListener('click', async () => {
+    exportJSON();
+    try{
+      await navigator.clipboard.writeText(jsonOut.value);
+      setStatus("JSON copied.");
+    } catch {
+      jsonOut.select();
+      document.execCommand("copy");
+      setStatus("JSON copied.");
+    }
+  });
+
+  document.getElementById('importJsonBtn').addEventListener('click', () => {
+    const txt = prompt("Paste tracer JSON here:");
+    if(!txt) return;
+    try{
+      const obj = JSON.parse(txt);
+      shapes = obj.shapes || [];
+      let maxId = 0;
+      for(const s of shapes){ if((s.id || 0) > maxId) maxId = s.id; }
+      nextId = maxId + 1;
+      const im = obj.image || {};
+      imageFileName = im.file || "";
+      imgNameEl.value = imageFileName;
+      const view = obj.view || {};
+      scale = view.scale || scale;
+      offsetX = view.offsetX || 0;
+      offsetY = view.offsetY || 0;
+      selectedId = null;
+      refreshList();
+      exportJSON();
+      if(imgLoaded) resizeCanvas();
+      redraw();
+      setStatus("JSON imported. Choose the image file again to continue tracing.");
+    } catch {
+      setStatus("Invalid JSON.");
+    }
+  });
+
+  document.getElementById('exportPngBtn').addEventListener('click', () => {
+    const off = document.createElement('canvas');
+    off.width = imgNaturalWidth;
+    off.height = imgNaturalHeight;
+    const octx = off.getContext('2d');
+    for(const s of shapes){
+      if(!s.points || s.points.length < 3) continue;
+      octx.beginPath();
+      octx.moveTo(s.points[0].x, s.points[0].y);
+      for(let i=1;i<s.points.length;i++) octx.lineTo(s.points[i].x, s.points[i].y);
+      octx.closePath();
+      if(s.fill && !s.fill.includes("0,0,0,0.00")){
+        octx.fillStyle = s.fill;
+        octx.fill();
+      }
+      octx.lineWidth = s.strokeWidth || 2;
+      octx.strokeStyle = s.stroke || "rgba(255,255,255,0.95)";
+      octx.stroke();
+    }
+    off.toBlob((blob) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'shape_traced_overlay.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      setStatus("Overlay PNG exported.");
+    }, 'image/png');
+  });
+
+  window.addEventListener('resize', () => { if(imgLoaded) fitCanvas(); });
+  redraw();
+})();
+</script>
 </body>
 </html>

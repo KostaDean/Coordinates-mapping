@@ -3,59 +3,37 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Freehand Shape Tracer v5</title>
+<title>Freehand Shape Tracer v6</title>
 <style>
   :root{
     --bg:#121212; --panel:#1d1d1d; --text:#f2f2f2; --muted:#bdbdbd;
     --line:#3a3a3a; --btn:#efefef; --btnText:#111; --accent:#7cc4ff;
   }
-  body{
-    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    background:var(--bg); color:var(--text); overscroll-behavior:none;
-  }
-  .bar{
-    position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:1px solid var(--line);
-    padding:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-  }
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+  .bar{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .bar label{font-size:15px}
   input[type="text"],input[type="range"],select{
     padding:8px 10px;border-radius:10px;border:1px solid #666;background:#fff;color:#111;font-size:16px
   }
   input[type="text"]{width:180px}
-  button{
-    border:1px solid #777;background:var(--btn);color:var(--btnText);
-    border-radius:999px;padding:10px 14px;font-size:16px
-  }
-  .wrap{max-width:1550px;margin:0 auto;padding:10px}
+  button{border:1px solid #777;background:var(--btn);color:var(--btnText);border-radius:999px;padding:10px 14px;font-size:16px}
+  .wrap{max-width:1580px;margin:0 auto;padding:10px}
   .hint,.status{color:var(--muted);font-size:14px;line-height:1.4}
   .status{margin:8px 0}
-  .main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:12px}
   @media (max-width: 980px){.main{grid-template-columns:1fr}}
-  .canvasWrap{
-    position:relative;border:1px solid var(--line);background:#000;min-height:420px;overflow:auto;
-    touch-action:none;
-  }
+  .canvasWrap{position:relative;border:1px solid var(--line);background:#000;min-height:420px;overflow:auto;touch-action:none}
   canvas{display:block;max-width:none;touch-action:none}
   .side{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px}
   .side h3{margin:6px 0 10px 0;font-size:18px}
-  .shapeList{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#101010}
-  .shape{
-    padding:8px 10px;border-bottom:1px solid #2a2a2a;display:grid;grid-template-columns:1fr auto;
-    gap:8px;align-items:center;cursor:pointer
-  }
-  .shape:last-child{border-bottom:none}
-  .shape small{display:block;color:var(--muted)}
-  .shape.selected{background:#1b2a36;box-shadow:inset 0 0 0 1px var(--accent)}
+  .shapeList{max-height:280px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#101010}
+  .shape{padding:8px 10px;border-bottom:1px solid #2a2a2a;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;cursor:pointer}
+  .shape:last-child{border-bottom:none}.shape small{display:block;color:var(--muted)}.shape.selected{background:#1b2a36;box-shadow:inset 0 0 0 1px var(--accent)}
   .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .sw{border:1px solid #666;border-radius:10px;padding:10px 8px;text-align:center;font-size:14px;cursor:pointer;background:#fff;color:#111}
-  textarea{
-    width:100%;min-height:180px;margin-top:10px;border-radius:10px;border:1px solid var(--line);
-    background:#0d0d0d;color:#92f092;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    font-size:12px;line-height:1.35
-  }
-  .mini{font-size:12px;color:var(--muted)}
-  .pill{display:inline-block;background:#273746;border:1px solid #446;padding:3px 7px;border-radius:999px;font-size:12px}
+  textarea{width:100%;min-height:170px;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:#0d0d0d;color:#92f092;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.35}
+  .mini{font-size:12px;color:var(--muted)}.pill{display:inline-block;background:#273746;border:1px solid #446;padding:3px 7px;border-radius:999px;font-size:12px}
 </style>
 </head>
 <body>
@@ -67,12 +45,15 @@
   <select id="modeSelect">
     <option value="freehand">Freehand</option>
     <option value="point">Point-by-point</option>
+    <option value="edit">Edit vertices</option>
   </select>
   <label>Stroke px:</label><input id="strokeWidth" type="range" min="1" max="12" step="1" value="2" />
   <button id="startBtn" type="button">Start</button>
   <button id="finishBtn" type="button">Finish & Save</button>
   <button id="undoPointBtn" type="button">Undo Point</button>
   <button id="cancelBtn" type="button">Cancel Current</button>
+  <button id="addVertexBtn" type="button">Add Vertex on Edge</button>
+  <button id="deleteVertexBtn" type="button">Delete Selected Vertex</button>
   <button id="exportJsonBtn" type="button">Export JSON</button>
   <button id="copyJsonBtn" type="button">Copy JSON</button>
   <button id="importJsonBtn" type="button">Import JSON</button>
@@ -81,8 +62,7 @@
 
 <div class="wrap">
   <div class="hint">
-    v5 adds stable pinch zoom, pan, undo current point, cancel current trace, and point-by-point tracing.
-    Use two fingers to zoom or pan. In freehand mode, draw with one finger or stylus. In point mode, tap vertices.
+    v6 adds editable vertices. In <b>Edit vertices</b> mode, tap a saved shape to select it. Drag yellow handles to refine the boundary. Use <b>Add Vertex on Edge</b> then tap near an edge to insert a vertex. Use <b>Delete Selected Vertex</b> to remove the current vertex.
   </div>
   <div class="status" id="status">Choose an image to begin.</div>
 
@@ -103,11 +83,11 @@
       </div>
 
       <h3>Selected Shape Tools</h3>
-      <div class="mini">Tap a saved shape in the list, or tap inside a shape on the canvas.</div>
+      <div class="mini">Tap a saved shape in the list, or tap inside a shape on the canvas. In edit mode, drag handles.</div>
       <div class="swatches" id="swatches"></div>
       <div class="row">
         <button id="renameBtn" type="button">Rename</button>
-        <button id="deleteSelectedBtn" type="button">Delete Selected</button>
+        <button id="deleteSelectedBtn" type="button">Delete Selected Shape</button>
         <button id="undoSavedBtn" type="button">Undo Last Saved</button>
         <button id="clearAllBtn" type="button">Clear All</button>
       </div>
@@ -149,7 +129,7 @@
   let imgNaturalHeight = 800;
   let scale = 1;
   let minScale = 0.2;
-  let maxScale = 12;
+  let maxScale = 14;
   let offsetX = 0;
   let offsetY = 0;
   let objectURL = null;
@@ -166,27 +146,110 @@
   let pinchStart = null;
   let suppressClickSelection = false;
 
+  let selectedVertexIndex = null;
+  let draggingVertex = false;
+  let addVertexMode = false;
+
   function setStatus(msg){ statusEl.textContent = msg; }
   function revokeURL(){ if(objectURL){ URL.revokeObjectURL(objectURL); objectURL = null; } }
   function selectedShape(){ return shapes.find(s => s.id === selectedId) || null; }
-
   function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
 
   function fitCanvas(){
     if(!imgLoaded) return;
     const maxW = Math.max(300, canvasWrap.clientWidth - 2);
-    const maxH = Math.max(300, window.innerHeight - 220);
+    const maxH = Math.max(300, window.innerHeight - 240);
     scale = Math.min(maxW / imgNaturalWidth, maxH / imgNaturalHeight);
     scale = clamp(scale, minScale, 2);
-    offsetX = 0;
-    offsetY = 0;
-    resizeCanvas();
-    redraw();
+    offsetX = 0; offsetY = 0;
+    resizeCanvas(); redraw();
   }
-
   function resizeCanvas(){
     canvas.width = Math.max(1, Math.round(imgNaturalWidth * scale));
     canvas.height = Math.max(1, Math.round(imgNaturalHeight * scale));
+  }
+
+  function centroid(points){
+    if(!points.length) return null;
+    let x=0,y=0; for(const p of points){x+=p.x;y+=p.y;}
+    return {x:x/points.length,y:y/points.length};
+  }
+  function bbox(points){
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const p of points){ if(p.x<minX)minX=p.x; if(p.y<minY)minY=p.y; if(p.x>maxX)maxX=p.x; if(p.y>maxY)maxY=p.y; }
+    return {minX,minY,maxX,maxY};
+  }
+  function pointInPolygon(pt, poly){
+    let inside=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+      const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
+      const intersect=((yi>pt.y)!==(yj>pt.y))&&(pt.x < (xj-xi)*(pt.y-yi)/((yj-yi)||1e-9)+xi);
+      if(intersect) inside=!inside;
+    }
+    return inside;
+  }
+  function canvasToImage(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    return { x:(clientX-rect.left-offsetX)/scale, y:(clientY-rect.top-offsetY)/scale };
+  }
+  function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
+
+  function nearestVertexIndex(shape, p, maxPx=18){
+    let best = null, bestD = Infinity;
+    shape.points.forEach((pt, i) => {
+      const dpx = Math.hypot(pt.x*scale + offsetX - (p.x*scale + offsetX), pt.y*scale + offsetY - (p.y*scale + offsetY));
+      if(dpx < bestD){ bestD = dpx; best = i; }
+    });
+    return bestD <= maxPx ? best : null;
+  }
+
+  function pointToSegmentDistance(p, a, b){
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len2 = dx*dx + dy*dy;
+    if(len2 === 0) return {d: dist(p,a), t:0};
+    let t = ((p.x-a.x)*dx + (p.y-a.y)*dy) / len2;
+    t = Math.max(0, Math.min(1, t));
+    const proj = {x:a.x+t*dx, y:a.y+t*dy};
+    return {d: dist(p, proj), t, proj};
+  }
+
+  function nearestEdgeInsertIndex(shape, p){
+    if(!shape || shape.points.length < 2) return null;
+    let best = {idx:null, d:Infinity};
+    for(let i=0;i<shape.points.length;i++){
+      const a = shape.points[i];
+      const b = shape.points[(i+1)%shape.points.length];
+      const res = pointToSegmentDistance(p, a, b);
+      const dpx = res.d * scale;
+      if(dpx < best.d){
+        best = {idx:i+1, d:dpx};
+      }
+    }
+    return best.d <= 24 ? best.idx : null;
+  }
+
+  function drawHandle(pt, isSelected){
+    const x = pt.x*scale + offsetX, y = pt.y*scale + offsetY;
+    ctx.beginPath(); ctx.arc(x,y,isSelected?7:5,0,Math.PI*2);
+    ctx.fillStyle = isSelected ? "#ffea61" : "#ffd54d";
+    ctx.fill();
+    ctx.strokeStyle = "#111"; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  function drawPath(points, fill, stroke, strokeWidth, closed){
+    if(points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x * scale + offsetX, points[0].y * scale + offsetY);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x * scale + offsetX, points[i].y * scale + offsetY);
+    if(closed){
+      ctx.closePath();
+      if(fill && !fill.includes("0,0,0,0.00")){
+        ctx.fillStyle = fill; ctx.fill();
+      }
+    }
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
   }
 
   function redraw(){
@@ -194,8 +257,7 @@
     if(imgLoaded){
       ctx.drawImage(img, offsetX, offsetY, imgNaturalWidth*scale, imgNaturalHeight*scale);
     } else {
-      ctx.fillStyle = "#101010";
-      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle="#101010"; ctx.fillRect(0,0,canvas.width,canvas.height);
     }
 
     for(const s of shapes){
@@ -209,84 +271,20 @@
       }
       if(isSel){
         const b = bbox(s.points);
-        ctx.strokeStyle = "rgba(255,227,108,0.95)";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(b.minX*scale + offsetX, b.minY*scale + offsetY, (b.maxX-b.minX)*scale, (b.maxY-b.minY)*scale);
+        ctx.strokeStyle="rgba(255,227,108,0.95)"; ctx.lineWidth=2;
+        ctx.strokeRect(b.minX*scale+offsetX,b.minY*scale+offsetY,(b.maxX-b.minX)*scale,(b.maxY-b.minY)*scale);
+        if(modeSelect.value === 'edit'){
+          s.points.forEach((pt, i)=>drawHandle(pt, i===selectedVertexIndex));
+        }
       }
     }
 
     if(currentPath.length){
-      drawPath(currentPath, "rgba(255,255,0,0.18)", "rgba(255,255,0,0.95)", Number(strokeWidthEl.value)||2, modeSelect.value === 'point' ? false : false);
+      drawPath(currentPath, "rgba(255,255,0,0.18)", "rgba(255,255,0,0.95)", Number(strokeWidthEl.value)||2, false);
       if(modeSelect.value === 'point'){
-        for(const p of currentPath) drawHandle(p);
+        currentPath.forEach((pt)=>drawHandle(pt,false));
       }
     }
-  }
-
-  function drawHandle(p){
-    const x = p.x*scale + offsetX, y = p.y*scale + offsetY;
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI*2);
-    ctx.fillStyle = "#ffd54d";
-    ctx.fill();
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  function drawPath(points, fill, stroke, strokeWidth, closed){
-    if(points.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(points[0].x * scale + offsetX, points[0].y * scale + offsetY);
-    for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x * scale + offsetX, points[i].y * scale + offsetY);
-    if(closed){
-      ctx.closePath();
-      if(fill && !fill.includes("0,0,0,0.00")){
-        ctx.fillStyle = fill;
-        ctx.fill();
-      }
-    }
-    ctx.lineWidth = strokeWidth;
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
-  }
-
-  function centroid(points){
-    if(!points.length) return null;
-    let x=0, y=0;
-    for(const p of points){ x+=p.x; y+=p.y; }
-    return {x:x/points.length, y:y/points.length};
-  }
-
-  function bbox(points){
-    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-    for(const p of points){
-      if(p.x<minX) minX=p.x;
-      if(p.y<minY) minY=p.y;
-      if(p.x>maxX) maxX=p.x;
-      if(p.y>maxY) maxY=p.y;
-    }
-    return {minX,minY,maxX,maxY};
-  }
-
-  function pointInPolygon(pt, poly){
-    let inside = false;
-    for(let i=0, j=poly.length-1; i<poly.length; j=i++){
-      const xi=poly[i].x, yi=poly[i].y;
-      const xj=poly[j].x, yj=poly[j].y;
-      const intersect = ((yi > pt.y) !== (yj > pt.y)) &&
-                        (pt.x < (xj - xi) * (pt.y - yi) / ((yj - yi) || 1e-9) + xi);
-      if(intersect) inside = !inside;
-    }
-    return inside;
-  }
-
-  function canvasToImage(clientX, clientY){
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: Math.round((clientX - rect.left - offsetX) / scale),
-      y: Math.round((clientY - rect.top - offsetY) / scale)
-    };
   }
 
   function refreshList(){
@@ -298,10 +296,10 @@
       div.innerHTML = `<div><strong>${s.label || "(no label)"}</strong><small>${s.points.length} pts · ${s.type || "freehand"}</small></div><div>${i+1}</div>`;
       div.addEventListener('click', () => {
         selectedId = s.id;
+        selectedVertexIndex = null;
         labelInput.value = s.label || "";
         selectedBadge.textContent = s.label || "selected";
-        refreshList();
-        redraw();
+        refreshList(); redraw();
       });
       shapeList.appendChild(div);
     }
@@ -313,265 +311,224 @@
       image: { file: imageFileName || imgNameEl.value || "", width: imgNaturalWidth, height: imgNaturalHeight },
       view: { scale, offsetX, offsetY },
       shapes,
-      version: 5
+      version: 6
     };
   }
-
-  function exportJSON(){
-    jsonOut.value = JSON.stringify(exportObject(), null, 2);
-  }
+  function exportJSON(){ jsonOut.value = JSON.stringify(exportObject(), null, 2); }
 
   function applyPresetToSelected(preset){
     const s = selectedShape();
     if(!s){ setStatus("Select a saved shape first."); return; }
-    s.fill = preset.fill;
-    s.stroke = preset.stroke;
-    refreshList();
-    exportJSON();
-    redraw();
-    setStatus(`Applied ${preset.name}.`);
+    s.fill = preset.fill; s.stroke = preset.stroke;
+    refreshList(); exportJSON(); redraw(); setStatus(`Applied ${preset.name}.`);
   }
 
   PRESETS.forEach((p) => {
     const btn = document.createElement('button');
-    btn.className = 'sw';
-    btn.type = 'button';
-    btn.textContent = p.name;
-    btn.style.background = p.fill.replace(/0\.\d+\)/, "0.75)");
-    btn.addEventListener('click', () => applyPresetToSelected(p));
+    btn.className='sw'; btn.type='button'; btn.textContent=p.name;
+    btn.style.background=p.fill.replace(/0\.\d+\)/, "0.75)");
+    btn.addEventListener('click', ()=>applyPresetToSelected(p));
     swatches.appendChild(btn);
   });
 
-  filePicker.addEventListener('change', () => {
+  filePicker.addEventListener('change', ()=>{
     const file = filePicker.files && filePicker.files[0];
     if(!file) return;
-    revokeURL();
-    objectURL = URL.createObjectURL(file);
-    imageFileName = file.name;
-    imgNameEl.value = file.name;
-    img.onload = () => {
-      imgLoaded = true;
-      imgNaturalWidth = img.naturalWidth;
-      imgNaturalHeight = img.naturalHeight;
-      fitCanvas();
-      setStatus(`Loaded ${file.name}`);
-    };
+    revokeURL(); objectURL = URL.createObjectURL(file);
+    imageFileName = file.name; imgNameEl.value = file.name;
+    img.onload = ()=>{ imgLoaded = true; imgNaturalWidth=img.naturalWidth; imgNaturalHeight=img.naturalHeight; fitCanvas(); setStatus(`Loaded ${file.name}`); };
     img.src = objectURL;
   });
 
-  document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startBtn').addEventListener('click', ()=>{
     if(!imgLoaded){ setStatus("Choose an image first."); return; }
-    currentPath = [];
-    tracing = true;
-    drawing = false;
+    currentPath=[]; tracing=true; drawing=false; selectedVertexIndex=null; addVertexMode=false;
     setStatus(`Ready to trace ${labelInput.value || "(unlabeled)"} in ${modeSelect.value} mode.`);
     redraw();
   });
 
-  document.getElementById('finishBtn').addEventListener('click', () => {
-    if(!tracing || currentPath.length < 3){
-      setStatus("Draw or tap a shape first.");
-      return;
-    }
+  document.getElementById('finishBtn').addEventListener('click', ()=>{
+    if(!tracing || currentPath.length < 3){ setStatus("Draw or tap a shape first."); return; }
     const preset = PRESETS[0];
     const shape = {
-      id: nextId++,
-      label: labelInput.value.trim(),
-      fill: preset.fill,
-      stroke: preset.stroke,
-      strokeWidth: Number(strokeWidthEl.value) || 2,
-      points: currentPath.slice(),
-      type: modeSelect.value === 'point' ? "point" : "freehand"
+      id: nextId++, label: labelInput.value.trim(), fill: preset.fill, stroke: preset.stroke,
+      strokeWidth: Number(strokeWidthEl.value) || 2, points: currentPath.slice(), type: modeSelect.value
     };
-    shapes.push(shape);
-    selectedId = shape.id;
-    currentPath = [];
-    tracing = false;
-    drawing = false;
-    refreshList();
-    exportJSON();
-    redraw();
-    setStatus("Trace saved.");
+    shapes.push(shape); selectedId = shape.id; selectedVertexIndex = null;
+    currentPath=[]; tracing=false; drawing=false;
+    refreshList(); exportJSON(); redraw(); setStatus("Trace saved.");
   });
 
-  document.getElementById('undoPointBtn').addEventListener('click', () => {
-    if(currentPath.length){
-      currentPath.pop();
-      redraw();
-      setStatus("Last current point removed.");
-    } else {
-      setStatus("No current points to undo.");
+  document.getElementById('undoPointBtn').addEventListener('click', ()=>{
+    if(modeSelect.value === 'edit'){
+      const s = selectedShape();
+      if(!s || selectedVertexIndex === null){ setStatus("Select a vertex first."); return; }
+      if(s.points.length <= 3){ setStatus("A shape needs at least 3 vertices."); return; }
+      s.points.splice(selectedVertexIndex,1); selectedVertexIndex = null;
+      exportJSON(); redraw(); setStatus("Selected vertex deleted.");
+      return;
     }
+    if(currentPath.length){ currentPath.pop(); redraw(); setStatus("Last current point removed."); }
+    else setStatus("No current points to undo.");
   });
 
-  document.getElementById('cancelBtn').addEventListener('click', () => {
-    currentPath = [];
-    tracing = false;
-    drawing = false;
-    redraw();
-    setStatus("Current trace canceled.");
+  document.getElementById('cancelBtn').addEventListener('click', ()=>{
+    currentPath=[]; tracing=false; drawing=false; addVertexMode=false; selectedVertexIndex=null;
+    redraw(); setStatus("Current trace canceled.");
   });
 
-  document.getElementById('deleteSelectedBtn').addEventListener('click', () => {
+  document.getElementById('addVertexBtn').addEventListener('click', ()=>{
+    if(modeSelect.value !== 'edit'){ setStatus("Switch to Edit vertices mode first."); return; }
+    if(!selectedShape()){ setStatus("Select a shape first."); return; }
+    addVertexMode = true;
+    setStatus("Tap near an edge to insert a new vertex.");
+  });
+
+  document.getElementById('deleteVertexBtn').addEventListener('click', ()=>{
     const s = selectedShape();
-    if(!s){ setStatus("Select a shape first."); return; }
-    shapes = shapes.filter(x => x.id !== s.id);
-    selectedId = null;
-    refreshList();
-    exportJSON();
-    redraw();
-    setStatus("Selected shape deleted.");
+    if(modeSelect.value !== 'edit' || !s || selectedVertexIndex === null){ setStatus("Select a vertex in Edit mode first."); return; }
+    if(s.points.length <= 3){ setStatus("A shape needs at least 3 vertices."); return; }
+    s.points.splice(selectedVertexIndex,1); selectedVertexIndex = null;
+    exportJSON(); redraw(); setStatus("Selected vertex deleted.");
   });
 
-  document.getElementById('renameBtn').addEventListener('click', () => {
-    const s = selectedShape();
-    if(!s){ setStatus("Select a shape first."); return; }
-    const name = prompt("Rename selected shape:", s.label || "");
-    if(name === null) return;
-    s.label = name.trim();
-    labelInput.value = s.label;
-    selectedBadge.textContent = s.label || "selected";
-    refreshList();
-    exportJSON();
-    redraw();
-    setStatus("Selected shape renamed.");
+  document.getElementById('deleteSelectedBtn').addEventListener('click', ()=>{
+    const s=selectedShape(); if(!s){ setStatus("Select a shape first."); return; }
+    shapes=shapes.filter(x=>x.id!==s.id); selectedId=null; selectedVertexIndex=null;
+    refreshList(); exportJSON(); redraw(); setStatus("Selected shape deleted.");
   });
 
-  document.getElementById('undoSavedBtn').addEventListener('click', () => {
+  document.getElementById('renameBtn').addEventListener('click', ()=>{
+    const s=selectedShape(); if(!s){ setStatus("Select a shape first."); return; }
+    const name=prompt("Rename selected shape:", s.label || ""); if(name===null) return;
+    s.label = name.trim(); labelInput.value = s.label; selectedBadge.textContent = s.label || "selected";
+    refreshList(); exportJSON(); redraw(); setStatus("Selected shape renamed.");
+  });
+
+  document.getElementById('undoSavedBtn').addEventListener('click', ()=>{
     if(shapes.length){
       const removed = shapes.pop();
-      if(selectedId === removed.id) selectedId = null;
-      refreshList();
-      exportJSON();
-      redraw();
-      setStatus("Last saved shape removed.");
-    } else {
-      setStatus("No saved shapes to undo.");
-    }
+      if(selectedId === removed.id){ selectedId = null; selectedVertexIndex = null; }
+      refreshList(); exportJSON(); redraw(); setStatus("Last saved shape removed.");
+    } else setStatus("No saved shapes to undo.");
   });
 
-  document.getElementById('clearAllBtn').addEventListener('click', () => {
+  document.getElementById('clearAllBtn').addEventListener('click', ()=>{
     if(!confirm("Clear all saved shapes?")) return;
-    shapes = [];
-    currentPath = [];
-    tracing = false;
-    drawing = false;
-    selectedId = null;
-    refreshList();
-    exportJSON();
-    redraw();
-    setStatus("All shapes cleared.");
-  });
-
-  function setView(newScale, newOffsetX, newOffsetY){
-    scale = clamp(newScale, minScale, maxScale);
-    offsetX = newOffsetX;
-    offsetY = newOffsetY;
-    resizeCanvas();
-    redraw();
-  }
-
-  document.getElementById('fitBtn').addEventListener('click', fitCanvas);
-  document.getElementById('zoomInBtn').addEventListener('click', () => {
-    if(!imgLoaded) return;
-    const centerX = canvas.width / 2, centerY = canvas.height / 2;
-    zoomAtCanvasPoint(centerX, centerY, 1.25);
-  });
-  document.getElementById('zoomOutBtn').addEventListener('click', () => {
-    if(!imgLoaded) return;
-    const centerX = canvas.width / 2, centerY = canvas.height / 2;
-    zoomAtCanvasPoint(centerX, centerY, 0.8);
-  });
-  document.getElementById('resetViewBtn').addEventListener('click', () => {
-    if(!imgLoaded) return;
-    fitCanvas();
-    setStatus("View reset.");
+    shapes=[]; currentPath=[]; tracing=false; drawing=false; selectedId=null; selectedVertexIndex=null; addVertexMode=false;
+    refreshList(); exportJSON(); redraw(); setStatus("All shapes cleared.");
   });
 
   function zoomAtCanvasPoint(canvasX, canvasY, factor){
     const imgX = (canvasX - offsetX) / scale;
     const imgY = (canvasY - offsetY) / scale;
-    let newScale = clamp(scale * factor, minScale, maxScale);
-    offsetX = canvasX - imgX * newScale;
-    offsetY = canvasY - imgY * newScale;
-    scale = newScale;
-    resizeCanvas();
-    redraw();
+    scale = clamp(scale * factor, minScale, maxScale);
+    offsetX = canvasX - imgX * scale;
+    offsetY = canvasY - imgY * scale;
+    resizeCanvas(); redraw();
   }
 
-  canvas.addEventListener('wheel', (e) => {
+  document.getElementById('fitBtn').addEventListener('click', fitCanvas);
+  document.getElementById('zoomInBtn').addEventListener('click', ()=>{ if(imgLoaded) zoomAtCanvasPoint(canvas.width/2, canvas.height/2, 1.25); });
+  document.getElementById('zoomOutBtn').addEventListener('click', ()=>{ if(imgLoaded) zoomAtCanvasPoint(canvas.width/2, canvas.height/2, 0.8); });
+  document.getElementById('resetViewBtn').addEventListener('click', ()=>{ if(imgLoaded){ fitCanvas(); setStatus("View reset."); } });
+
+  canvas.addEventListener('wheel', (e)=>{
     if(!imgLoaded) return;
     e.preventDefault();
-    zoomAtCanvasPoint(e.offsetX, e.offsetY, e.deltaY < 0 ? 1.12 : 0.89);
-  }, { passive:false });
+    zoomAtCanvasPoint(e.offsetX, e.offsetY, e.deltaY<0 ? 1.12 : 0.89);
+  }, {passive:false});
 
-  canvas.addEventListener('pointerdown', (evt) => {
+  canvas.addEventListener('pointerdown', (evt)=>{
     if(!imgLoaded) return;
     canvas.setPointerCapture(evt.pointerId);
-    activePointers.set(evt.pointerId, {x: evt.clientX, y: evt.clientY});
+    activePointers.set(evt.pointerId, {x:evt.clientX, y:evt.clientY});
 
     if(activePointers.size === 2){
-      suppressClickSelection = true;
-      drawing = false;
+      suppressClickSelection = true; drawing = false;
       const pts = [...activePointers.values()];
-      pinchStart = {
-        dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-        scale,
-        midX: (pts[0].x + pts[1].x) / 2,
-        midY: (pts[0].y + pts[1].y) / 2,
-        offsetX,
-        offsetY
-      };
+      pinchStart = { dist: Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y), scale, offsetX, offsetY };
       return;
+    }
+
+    const p = canvasToImage(evt.clientX, evt.clientY);
+
+    if(modeSelect.value === 'edit' && !tracing){
+      const s = selectedShape();
+      if(addVertexMode && s){
+        const idx = nearestEdgeInsertIndex(s, p);
+        if(idx !== null){
+          s.points.splice(idx, 0, {x:p.x, y:p.y});
+          selectedVertexIndex = idx;
+          addVertexMode = false;
+          exportJSON(); redraw(); setStatus("Vertex added on edge.");
+          return;
+        } else {
+          setStatus("Tap closer to an edge to add a vertex.");
+          return;
+        }
+      }
+      if(s){
+        const vi = nearestVertexIndex(s, p);
+        if(vi !== null){
+          selectedVertexIndex = vi;
+          draggingVertex = true;
+          redraw(); setStatus("Dragging selected vertex.");
+          return;
+        }
+      }
     }
 
     if(tracing){
       if(modeSelect.value === 'point'){
-        currentPath.push(canvasToImage(evt.clientX, evt.clientY));
-        redraw();
-        setStatus(`Point added. ${currentPath.length} points.`);
+        currentPath.push({x:p.x, y:p.y});
+        redraw(); setStatus(`Point added. ${currentPath.length} points.`);
         return;
       } else {
         drawing = true;
-        currentPath = [canvasToImage(evt.clientX, evt.clientY)];
+        currentPath = [{x:p.x, y:p.y}];
         redraw();
         return;
       }
     }
 
-    panStart = {x: evt.clientX, y: evt.clientY, offsetX, offsetY};
+    panStart = {x:evt.clientX, y:evt.clientY, offsetX, offsetY};
   });
 
-  canvas.addEventListener('pointermove', (evt) => {
+  canvas.addEventListener('pointermove', (evt)=>{
     if(!activePointers.has(evt.pointerId)) return;
-    activePointers.set(evt.pointerId, {x: evt.clientX, y: evt.clientY});
+    activePointers.set(evt.pointerId, {x:evt.clientX, y:evt.clientY});
 
     if(activePointers.size === 2 && pinchStart){
       const pts = [...activePointers.values()];
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const dist2 = Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
       const rect = canvas.getBoundingClientRect();
-      const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
-      const midY = (pts[0].y + pts[1].y) / 2 - rect.top;
-
-      const factor = dist / (pinchStart.dist || 1);
+      const midX = (pts[0].x+pts[1].x)/2 - rect.left;
+      const midY = (pts[0].y+pts[1].y)/2 - rect.top;
+      const factor = dist2 / (pinchStart.dist || 1);
       const newScale = clamp(pinchStart.scale * factor, minScale, maxScale);
-
       const imgX = (midX - pinchStart.offsetX) / pinchStart.scale;
       const imgY = (midY - pinchStart.offsetY) / pinchStart.scale;
-
-      offsetX = midX - imgX * newScale;
-      offsetY = midY - imgY * newScale;
       scale = newScale;
-      resizeCanvas();
-      redraw();
-      return;
+      offsetX = midX - imgX * scale;
+      offsetY = midY - imgY * scale;
+      resizeCanvas(); redraw(); return;
+    }
+
+    if(draggingVertex && modeSelect.value === 'edit'){
+      const s = selectedShape();
+      if(s && selectedVertexIndex !== null){
+        const p = canvasToImage(evt.clientX, evt.clientY);
+        s.points[selectedVertexIndex] = {x:p.x, y:p.y};
+        exportJSON(); redraw(); return;
+      }
     }
 
     if(tracing && drawing && modeSelect.value === 'freehand'){
       const p = canvasToImage(evt.clientX, evt.clientY);
       const last = currentPath[currentPath.length - 1];
       if(!last || Math.hypot(p.x-last.x, p.y-last.y) >= 2){
-        currentPath.push(p);
+        currentPath.push({x:p.x, y:p.y});
         redraw();
       }
       return;
@@ -584,125 +541,70 @@
     }
   });
 
-  canvas.addEventListener('pointerup', (evt) => {
+  function endPointer(evt){
     activePointers.delete(evt.pointerId);
-
-    if(drawing && modeSelect.value === 'freehand'){
-      drawing = false;
-      setStatus(`Drawn ${currentPath.length} points. Tap Finish & Save.`);
-    } else if(!tracing && activePointers.size === 0 && !pinchStart && !panStart){
-      // noop
+    if(draggingVertex){
+      draggingVertex = false;
+      setStatus("Vertex moved.");
+    } else if(drawing && modeSelect.value === 'freehand'){
+      drawing = false; setStatus(`Drawn ${currentPath.length} points. Tap Finish & Save.`);
     }
-
     if(activePointers.size < 2) pinchStart = null;
     if(activePointers.size === 0) panStart = null;
     redraw();
-  });
-
-  canvas.addEventListener('pointercancel', (evt) => {
-    activePointers.delete(evt.pointerId);
-    if(activePointers.size < 2) pinchStart = null;
-    if(activePointers.size === 0){
-      panStart = null;
-      drawing = false;
-    }
-    redraw();
-  });
-
-  canvas.addEventListener('click', (evt) => {
-    if(!imgLoaded || tracing) return;
-    if(suppressClickSelection){
-      suppressClickSelection = false;
-      return;
-    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+  canvas.addEventListener('click', (evt)=>{
+    if(!imgLoaded || tracing || modeSelect.value === 'edit') return;
+    if(suppressClickSelection){ suppressClickSelection=false; return; }
     const p = canvasToImage(evt.clientX, evt.clientY);
     let found = null;
-    for(let i=shapes.length-1;i>=0;i--){
-      if(pointInPolygon(p, shapes[i].points)){ found = shapes[i]; break; }
-    }
-    selectedId = found ? found.id : null;
-    if(found){
-      labelInput.value = found.label || "";
-      selectedBadge.textContent = found.label || "selected";
-      setStatus(`Selected ${found.label || "shape"}.`);
-    } else {
-      selectedBadge.textContent = "none selected";
-      setStatus("No shape selected.");
-    }
-    refreshList();
-    redraw();
+    for(let i=shapes.length-1;i>=0;i--){ if(pointInPolygon(p, shapes[i].points)){ found = shapes[i]; break; } }
+    selectedId = found ? found.id : null; selectedVertexIndex = null;
+    if(found){ labelInput.value = found.label || ""; selectedBadge.textContent = found.label || "selected"; setStatus(`Selected ${found.label || "shape"}.`); }
+    else { selectedBadge.textContent = "none selected"; setStatus("No shape selected."); }
+    refreshList(); redraw();
   });
 
   document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
-  document.getElementById('copyJsonBtn').addEventListener('click', async () => {
+  document.getElementById('copyJsonBtn').addEventListener('click', async ()=>{
     exportJSON();
-    try{
-      await navigator.clipboard.writeText(jsonOut.value);
-      setStatus("JSON copied.");
-    } catch {
-      jsonOut.select();
-      document.execCommand("copy");
-      setStatus("JSON copied.");
-    }
+    try{ await navigator.clipboard.writeText(jsonOut.value); setStatus("JSON copied."); }
+    catch{ jsonOut.select(); document.execCommand("copy"); setStatus("JSON copied."); }
   });
-
-  document.getElementById('importJsonBtn').addEventListener('click', () => {
-    const txt = prompt("Paste tracer JSON here:");
-    if(!txt) return;
+  document.getElementById('importJsonBtn').addEventListener('click', ()=>{
+    const txt = prompt("Paste tracer JSON here:"); if(!txt) return;
     try{
       const obj = JSON.parse(txt);
       shapes = obj.shapes || [];
-      let maxId = 0;
-      for(const s of shapes){ if((s.id || 0) > maxId) maxId = s.id; }
-      nextId = maxId + 1;
-      const im = obj.image || {};
-      imageFileName = im.file || "";
-      imgNameEl.value = imageFileName;
-      const view = obj.view || {};
-      scale = view.scale || scale;
-      offsetX = view.offsetX || 0;
-      offsetY = view.offsetY || 0;
-      selectedId = null;
-      refreshList();
-      exportJSON();
-      if(imgLoaded) resizeCanvas();
-      redraw();
+      let maxId = 0; for(const s of shapes){ if((s.id || 0) > maxId) maxId = s.id; } nextId = maxId + 1;
+      const im = obj.image || {}; imageFileName = im.file || ""; imgNameEl.value = imageFileName;
+      const view = obj.view || {}; scale = view.scale || scale; offsetX = view.offsetX || 0; offsetY = view.offsetY || 0;
+      selectedId = null; selectedVertexIndex = null;
+      refreshList(); exportJSON(); if(imgLoaded) resizeCanvas(); redraw();
       setStatus("JSON imported. Choose the image file again to continue tracing.");
-    } catch {
-      setStatus("Invalid JSON.");
-    }
+    } catch { setStatus("Invalid JSON."); }
   });
 
-  document.getElementById('exportPngBtn').addEventListener('click', () => {
-    const off = document.createElement('canvas');
-    off.width = imgNaturalWidth;
-    off.height = imgNaturalHeight;
+  document.getElementById('exportPngBtn').addEventListener('click', ()=>{
+    const off = document.createElement('canvas'); off.width = imgNaturalWidth; off.height = imgNaturalHeight;
     const octx = off.getContext('2d');
     for(const s of shapes){
       if(!s.points || s.points.length < 3) continue;
-      octx.beginPath();
-      octx.moveTo(s.points[0].x, s.points[0].y);
+      octx.beginPath(); octx.moveTo(s.points[0].x, s.points[0].y);
       for(let i=1;i<s.points.length;i++) octx.lineTo(s.points[i].x, s.points[i].y);
       octx.closePath();
-      if(s.fill && !s.fill.includes("0,0,0,0.00")){
-        octx.fillStyle = s.fill;
-        octx.fill();
-      }
-      octx.lineWidth = s.strokeWidth || 2;
-      octx.strokeStyle = s.stroke || "rgba(255,255,255,0.95)";
-      octx.stroke();
+      if(s.fill && !s.fill.includes("0,0,0,0.00")){ octx.fillStyle = s.fill; octx.fill(); }
+      octx.lineWidth = s.strokeWidth || 2; octx.strokeStyle = s.stroke || "rgba(255,255,255,0.95)"; octx.stroke();
     }
-    off.toBlob((blob) => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'shape_traced_overlay.png';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
-      setStatus("Overlay PNG exported.");
+    off.toBlob((blob)=>{
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'shape_traced_overlay.png'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1500); setStatus("Overlay PNG exported.");
     }, 'image/png');
   });
 
-  window.addEventListener('resize', () => { if(imgLoaded) fitCanvas(); });
+  window.addEventListener('resize', ()=>{ if(imgLoaded) fitCanvas(); });
   redraw();
 })();
 </script>

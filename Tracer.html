@@ -1,249 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Freehand Shape Tracer v3</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tracer v4 (Zoom + Color Control)</title>
 <style>
-:root{--bg:#121212;--panel:#1d1d1d;--text:#f2f2f2;--muted:#bdbdbd;--line:#3a3a3a;--btn:#efefef;--btnText:#111;--accent:#7cc4ff}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-.bar{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.bar label{font-size:15px}
-input[type="text"],input[type="range"],select{padding:8px 10px;border-radius:10px;border:1px solid #666;background:#fff;color:#111;font-size:16px}
-input[type="text"]{width:180px}
-button{border:1px solid #777;background:var(--btn);color:var(--btnText);border-radius:999px;padding:10px 14px;font-size:16px}
-.wrap{max-width:1500px;margin:0 auto;padding:10px}
-.hint,.status{color:var(--muted);font-size:14px;line-height:1.4}.status{margin:8px 0}
-.main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:12px}
-@media (max-width:980px){.main{grid-template-columns:1fr}}
-.canvasWrap{position:relative;border:1px solid var(--line);background:#000;min-height:420px;overflow:auto}
-canvas{display:block;max-width:100%;touch-action:none}
-.side{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px}
-.side h3{margin:6px 0 10px 0;font-size:18px}
-.shapeList{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#101010}
-.shape{padding:8px 10px;border-bottom:1px solid #2a2a2a;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;cursor:pointer}
-.shape:last-child{border-bottom:none}.shape small{display:block;color:var(--muted)}.shape.selected{background:#1b2a36;box-shadow:inset 0 0 0 1px var(--accent)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.sw{border:1px solid #666;border-radius:10px;padding:10px 8px;text-align:center;font-size:14px;cursor:pointer;background:#fff;color:#111}
-textarea{width:100%;min-height:180px;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:#0d0d0d;color:#92f092;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.35}
-.mini{font-size:12px;color:var(--muted)}.pill{display:inline-block;background:#273746;border:1px solid #446;padding:3px 7px;border-radius:999px;font-size:12px}
+body { margin:0; background:#111; color:#eee; font-family:Arial; }
+.top { padding:10px; background:#222; display:flex; flex-wrap:wrap; gap:8px; }
+button, input { padding:8px; font-size:16px; }
+canvas { display:block; background:#000; touch-action:none; }
 </style>
 </head>
 <body>
-<div class="bar">
-<label>Choose image:</label><input id="filePicker" type="file" accept="image/*" />
-<label>Image name:</label><input id="imgName" type="text" placeholder="optional image name" />
-<label>Label:</label><input id="labelInput" type="text" placeholder="e.g. R01 or Zone-A" />
-<label>Stroke px:</label><input id="strokeWidth" type="range" min="1" max="12" step="1" value="2" />
-<button id="startBtn" type="button">Start Freehand</button>
-<button id="finishBtn" type="button">Finish & Save</button>
-<button id="clearCurrentBtn" type="button">Clear Current</button>
-<button id="exportJsonBtn" type="button">Export JSON</button>
-<button id="copyJsonBtn" type="button">Copy JSON</button>
-<button id="importJsonBtn" type="button">Import JSON</button>
-<button id="exportPngBtn" type="button">Export Overlay PNG</button>
+
+<div class="top">
+<input type="file" id="file">
+<label>Stroke</label><input type="color" id="stroke" value="#ffffff">
+<label>Fill</label><input type="color" id="fill" value="#ff0000">
+<button onclick="startDraw()">Draw</button>
+<button onclick="finish()">Save</button>
+<button onclick="exportJSON()">Export</button>
 </div>
 
-<div class="wrap">
-<div class="hint">General-purpose tracer. Draw freehand shapes on any image, save them with labels, recolor them later, and export both JSON and a transparent PNG overlay. JSON preserves editable paths and anchoring coordinates. PNG is for visual placement.</div>
-<div class="status" id="status">Choose an image to begin.</div>
-<div class="main">
-<div class="canvasWrap"><canvas id="canvas" width="1000" height="800"></canvas></div>
-<div class="side">
-<h3>Saved Shapes <span class="pill" id="selectedBadge">none selected</span></h3>
-<div class="shapeList" id="shapeList"></div>
-<div class="row"><button id="fitBtn" type="button">Fit</button><button id="zoomInBtn" type="button">Zoom In</button><button id="zoomOutBtn" type="button">Zoom Out</button></div>
-<h3>Selected Shape Tools</h3>
-<div class="mini">Tap a saved shape in the list, or tap inside a shape on the canvas.</div>
-<div class="swatches" id="swatches"></div>
-<div class="row"><button id="renameBtn" type="button">Rename</button><button id="deleteSelectedBtn" type="button">Delete Selected</button><button id="clearBtn" type="button">Clear All</button></div>
-<textarea id="jsonOut" placeholder="Exported JSON appears here..."></textarea>
-</div>
-</div>
-</div>
+<canvas id="c"></canvas>
 
 <script>
-(() => {
-const PRESETS=[
-{name:"Player 1",fill:"rgba(232,107,107,0.45)",stroke:"rgba(232,107,107,0.95)"},
-{name:"Player 2",fill:"rgba(104,204,127,0.45)",stroke:"rgba(104,204,127,0.95)"},
-{name:"Legal Move",fill:"rgba(99,167,255,0.45)",stroke:"rgba(99,167,255,0.95)"},
-{name:"Staging",fill:"rgba(255,255,255,0.38)",stroke:"rgba(255,255,255,0.95)"},
-{name:"Warning",fill:"rgba(255,215,0,0.40)",stroke:"rgba(255,215,0,0.95)"},
-{name:"Clear",fill:"rgba(0,0,0,0.00)",stroke:"rgba(255,255,255,0.95)"}];
+let canvas = document.getElementById("c");
+let ctx = canvas.getContext("2d");
 
-const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d'),
-statusEl=document.getElementById('status'), jsonOut=document.getElementById('jsonOut'),
-shapeList=document.getElementById('shapeList'), filePicker=document.getElementById('filePicker'),
-imgNameEl=document.getElementById('imgName'), labelInput=document.getElementById('labelInput'),
-strokeWidthEl=document.getElementById('strokeWidth'), swatches=document.getElementById('swatches'),
-selectedBadge=document.getElementById('selectedBadge');
+let img = new Image();
+let shapes = [];
+let path = [];
+let drawing = false;
 
-let img=new Image(), imgLoaded=false, imageFileName="", imgNaturalWidth=1000, imgNaturalHeight=800, scale=1, objectURL=null;
-let shapes=[], currentPath=[], tracing=false, drawing=false, selectedId=null, nextId=1;
+let scale = 1;
+let offsetX = 0, offsetY = 0;
+let isPanning = false;
+let lastX=0, lastY=0;
 
-const setStatus=(m)=>statusEl.textContent=m;
-const revokeURL=()=>{if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null;}};
-const selectedShape=()=>shapes.find(s=>s.id===selectedId)||null;
-
-function fitCanvas(){
-  const maxW=Math.max(300, canvas.parentElement.clientWidth-2);
-  scale=Math.min(1.8, maxW/imgNaturalWidth);
-  if(!imgLoaded) scale=1;
-  canvas.width=Math.round(imgNaturalWidth*scale);
-  canvas.height=Math.round(imgNaturalHeight*scale);
-  redraw();
-}
-function centroid(points){if(!points.length)return null; let x=0,y=0; for(const p of points){x+=p.x;y+=p.y;} return {x:x/points.length,y:y/points.length};}
-function bbox(points){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; for(const p of points){if(p.x<minX)minX=p.x;if(p.y<minY)minY=p.y;if(p.x>maxX)maxX=p.x;if(p.y>maxY)maxY=p.y;} return {minX,minY,maxX,maxY};}
-function pointInPolygon(pt, poly){
-  let inside=false;
-  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
-    const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
-    const intersect=((yi>pt.y)!==(yj>pt.y))&&(pt.x < (xj-xi)*(pt.y-yi)/((yj-yi)||1e-9)+xi);
-    if(intersect) inside=!inside;
+document.getElementById("file").onchange = e=>{
+  let f = e.target.files[0];
+  let url = URL.createObjectURL(f);
+  img.onload = ()=>{
+    canvas.width = img.width;
+    canvas.height = img.height;
+    draw();
   }
-  return inside;
+  img.src = url;
 }
-function toImageCoords(evt){
-  const rect=canvas.getBoundingClientRect();
-  return {x:Math.round((evt.clientX-rect.left)/scale), y:Math.round((evt.clientY-rect.top)/scale)};
-}
-function drawPath(points, fill, stroke, strokeWidth, closed){
-  if(points.length<2) return;
-  ctx.beginPath();
-  ctx.moveTo(points[0].x*scale, points[0].y*scale);
-  for(let i=1;i<points.length;i++) ctx.lineTo(points[i].x*scale, points[i].y*scale);
-  if(closed){ctx.closePath(); if(fill && !fill.includes("0,0,0,0.00")){ctx.fillStyle=fill;ctx.fill();}}
-  ctx.lineWidth=strokeWidth; ctx.strokeStyle=stroke; ctx.stroke();
-}
-function redraw(){
+
+function draw(){
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(imgLoaded) ctx.drawImage(img,0,0,canvas.width,canvas.height);
-  else {ctx.fillStyle="#101010";ctx.fillRect(0,0,canvas.width,canvas.height);}
-  for(const s of shapes){
-    const isSel=s.id===selectedId;
-    drawPath(s.points,s.fill,s.stroke||"rgba(255,255,255,0.9)",(s.strokeWidth||2)+(isSel?1:0),true);
-    const c=centroid(s.points);
-    if(c){ctx.fillStyle="#fff";ctx.font=(isSel?"bold ":"")+"15px sans-serif";ctx.fillText(s.label||"", c.x*scale+4, c.y*scale-4);}
-    if(isSel){
-      const b=bbox(s.points); ctx.strokeStyle="rgba(255,227,108,0.95)"; ctx.lineWidth=2;
-      ctx.strokeRect(b.minX*scale,b.minY*scale,(b.maxX-b.minX)*scale,(b.maxY-b.minY)*scale);
-    }
-  }
-  if(currentPath.length) drawPath(currentPath,"rgba(255,255,0,0.20)","rgba(255,255,0,0.95)",Number(strokeWidthEl.value)||2,false);
-}
-function refreshList(){
-  shapeList.innerHTML="";
-  for(let i=0;i<shapes.length;i++){
-    const s=shapes[i], div=document.createElement('div');
-    div.className='shape'+(s.id===selectedId?' selected':'');
-    div.innerHTML=`<div><strong>${s.label || "(no label)"}</strong><small>${s.points.length} pts · ${s.type || "freehand"}</small></div><div>${i+1}</div>`;
-    div.addEventListener('click', ()=>{selectedId=s.id; labelInput.value=s.label||""; selectedBadge.textContent=s.label||"selected"; refreshList(); redraw();});
-    shapeList.appendChild(div);
-  }
-  if(!selectedShape()) selectedBadge.textContent="none selected";
-}
-function exportObject(){return {image:{file:imageFileName||imgNameEl.value||"", width:imgNaturalWidth, height:imgNaturalHeight}, shapes, version:3};}
-function exportJSON(){jsonOut.value=JSON.stringify(exportObject(),null,2);}
-function applyPresetToSelected(preset){
-  const s=selectedShape(); if(!s){setStatus("Select a saved shape first.");return;}
-  s.fill=preset.fill; s.stroke=preset.stroke; refreshList(); exportJSON(); redraw(); setStatus(`Applied ${preset.name}.`);
-}
-PRESETS.forEach(p=>{
-  const btn=document.createElement('button'); btn.className='sw'; btn.type='button'; btn.textContent=p.name;
-  btn.style.background=p.fill.replace(/0\.\d+\)/,"0.75)");
-  btn.addEventListener('click', ()=>applyPresetToSelected(p));
-  swatches.appendChild(btn);
-});
 
-filePicker.addEventListener('change', ()=>{
-  const file=filePicker.files&&filePicker.files[0]; if(!file) return;
-  revokeURL(); objectURL=URL.createObjectURL(file); imageFileName=file.name; imgNameEl.value=file.name;
-  img.onload=()=>{imgLoaded=true; imgNaturalWidth=img.naturalWidth; imgNaturalHeight=img.naturalHeight; fitCanvas(); setStatus(`Loaded ${file.name}`);};
-  img.src=objectURL;
-});
-document.getElementById('startBtn').addEventListener('click', ()=>{
-  if(!imgLoaded){setStatus("Choose an image first.");return;}
-  currentPath=[]; tracing=true; drawing=false; setStatus(`Ready to draw ${labelInput.value || "(unlabeled)"}.`); redraw();
-});
-document.getElementById('finishBtn').addEventListener('click', ()=>{
-  if(!tracing || currentPath.length<3){setStatus("Draw a shape first.");return;}
-  const preset=PRESETS[0];
-  const shape={id:nextId++, label:labelInput.value.trim(), fill:preset.fill, stroke:preset.stroke, strokeWidth:Number(strokeWidthEl.value)||2, points:currentPath.slice(), type:"freehand"};
-  shapes.push(shape); selectedId=shape.id; currentPath=[]; tracing=false; drawing=false; refreshList(); exportJSON(); redraw(); setStatus("Freehand trace saved.");
-});
-document.getElementById('clearCurrentBtn').addEventListener('click', ()=>{currentPath=[]; tracing=false; drawing=false; redraw(); setStatus("Current unsaved path cleared.");});
-document.getElementById('deleteSelectedBtn').addEventListener('click', ()=>{
-  const s=selectedShape(); if(!s){setStatus("Select a shape first.");return;}
-  shapes=shapes.filter(x=>x.id!==s.id); selectedId=null; refreshList(); exportJSON(); redraw(); setStatus("Selected shape deleted.");
-});
-document.getElementById('renameBtn').addEventListener('click', ()=>{
-  const s=selectedShape(); if(!s){setStatus("Select a shape first.");return;}
-  const name=prompt("Rename selected shape:", s.label||""); if(name===null) return;
-  s.label=name.trim(); labelInput.value=s.label; selectedBadge.textContent=s.label||"selected"; refreshList(); exportJSON(); redraw(); setStatus("Selected shape renamed.");
-});
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  if(!confirm("Clear all saved shapes?")) return;
-  shapes=[]; currentPath=[]; tracing=false; drawing=false; selectedId=null; refreshList(); exportJSON(); redraw(); setStatus("All shapes cleared.");
-});
-canvas.addEventListener('pointerdown', evt=>{
-  if(!imgLoaded) return;
-  const p=toImageCoords(evt);
-  if(!tracing){
-    let found=null;
-    for(let i=shapes.length-1;i>=0;i--){if(pointInPolygon(p, shapes[i].points)){found=shapes[i];break;}}
-    selectedId=found?found.id:null;
-    if(found){labelInput.value=found.label||""; selectedBadge.textContent=found.label||"selected"; setStatus(`Selected ${found.label || "shape"}.`);}
-    else selectedBadge.textContent="none selected";
-    refreshList(); redraw(); return;
-  }
-  drawing=true; currentPath=[p]; redraw();
-});
-canvas.addEventListener('pointermove', evt=>{
-  if(!imgLoaded || !tracing || !drawing) return;
-  const p=toImageCoords(evt), last=currentPath[currentPath.length-1];
-  if(!last || Math.hypot(p.x-last.x,p.y-last.y)>=2){currentPath.push(p); redraw();}
-});
-function endDraw(){if(drawing){drawing=false; redraw(); setStatus(`Drawn ${currentPath.length} points. Tap Finish & Save.`);}}
-canvas.addEventListener('pointerup', endDraw);
-canvas.addEventListener('pointercancel', endDraw);
-canvas.addEventListener('pointerleave', endDraw);
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+  ctx.drawImage(img,0,0);
 
-document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
-document.getElementById('copyJsonBtn').addEventListener('click', async ()=>{
-  exportJSON();
-  try{await navigator.clipboard.writeText(jsonOut.value); setStatus("JSON copied.");}
-  catch{jsonOut.select(); document.execCommand("copy"); setStatus("JSON copied.");}
-});
-document.getElementById('importJsonBtn').addEventListener('click', ()=>{
-  const txt=prompt("Paste tracer JSON here:"); if(!txt) return;
-  try{
-    const obj=JSON.parse(txt); shapes=obj.shapes||[]; let maxId=0; for(const s of shapes){if((s.id||0)>maxId) maxId=s.id;} nextId=maxId+1;
-    const im=obj.image||{}; imageFileName=im.file||""; imgNameEl.value=imageFileName; selectedId=null; refreshList(); exportJSON(); redraw();
-    setStatus("JSON imported. Choose the image file again to continue tracing.");
-  } catch { setStatus("Invalid JSON."); }
-});
-document.getElementById('exportPngBtn').addEventListener('click', ()=>{
-  const off=document.createElement('canvas'); off.width=imgNaturalWidth; off.height=imgNaturalHeight; const octx=off.getContext('2d');
-  for(const s of shapes){
-    if(!s.points || s.points.length<3) continue;
-    octx.beginPath(); octx.moveTo(s.points[0].x,s.points[0].y); for(let i=1;i<s.points.length;i++) octx.lineTo(s.points[i].x,s.points[i].y); octx.closePath();
-    if(s.fill && !s.fill.includes("0,0,0,0.00")){octx.fillStyle=s.fill; octx.fill();}
-    octx.lineWidth=s.strokeWidth||2; octx.strokeStyle=s.stroke||"rgba(255,255,255,0.95)"; octx.stroke();
+  for(let s of shapes){
+    ctx.beginPath();
+    ctx.moveTo(s[0].x, s[0].y);
+    for(let p of s) ctx.lineTo(p.x,p.y);
+    ctx.closePath();
+    ctx.fillStyle = s.fill;
+    ctx.fill();
+    ctx.strokeStyle = s.stroke;
+    ctx.stroke();
   }
-  off.toBlob(blob=>{
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='shape_traced_overlay.png'; a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1500); setStatus("Overlay PNG exported.");
-  }, 'image/png');
-});
-document.getElementById('fitBtn').addEventListener('click', fitCanvas);
-document.getElementById('zoomInBtn').addEventListener('click', ()=>{if(!imgLoaded)return; scale*=1.2; canvas.width=Math.round(imgNaturalWidth*scale); canvas.height=Math.round(imgNaturalHeight*scale); redraw();});
-document.getElementById('zoomOutBtn').addEventListener('click', ()=>{if(!imgLoaded)return; scale/=1.2; canvas.width=Math.round(imgNaturalWidth*scale); canvas.height=Math.round(imgNaturalHeight*scale); redraw();});
-window.addEventListener('resize', ()=>{if(imgLoaded) fitCanvas();});
-redraw();
-})();
+
+  if(path.length){
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for(let p of path) ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle="yellow";
+    ctx.stroke();
+  }
+}
+
+function startDraw(){ drawing=true; path=[]; }
+
+function finish(){
+  if(path.length<3) return;
+  path.fill = document.getElementById("fill").value;
+  path.stroke = document.getElementById("stroke").value;
+  shapes.push(path);
+  path=[];
+  drawing=false;
+  draw();
+}
+
+canvas.onpointerdown = e=>{
+  if(drawing){
+    path.push(getPos(e));
+  } else {
+    isPanning=true;
+    lastX=e.clientX; lastY=e.clientY;
+  }
+}
+
+canvas.onpointermove = e=>{
+  if(drawing){
+    path.push(getPos(e));
+    draw();
+  } else if(isPanning){
+    offsetX += (e.clientX-lastX)/scale;
+    offsetY += (e.clientY-lastY)/scale;
+    lastX=e.clientX; lastY=e.clientY;
+    draw();
+  }
+}
+
+canvas.onpointerup = ()=>{ isPanning=false; }
+
+canvas.onwheel = e=>{
+  e.preventDefault();
+  let zoom = e.deltaY<0 ? 1.1 : 0.9;
+  scale *= zoom;
+  draw();
+}
+
+function getPos(e){
+  let rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX-rect.left)/scale - offsetX,
+    y: (e.clientY-rect.top)/scale - offsetY
+  }
+}
+
+function exportJSON(){
+  let data = JSON.stringify(shapes);
+  navigator.clipboard.writeText(data);
+  alert("Copied JSON");
+}
 </script>
+
 </body>
 </html>

@@ -3,135 +3,435 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tracer v4 (Zoom + Color Control)</title>
+<title>Phaistos Disk Single-Player Monte Carlo by Staging Rim Cell</title>
 <style>
-body { margin:0; background:#111; color:#eee; font-family:Arial; }
-.top { padding:10px; background:#222; display:flex; flex-wrap:wrap; gap:8px; }
-button, input { padding:8px; font-size:16px; }
-canvas { display:block; background:#000; touch-action:none; }
+body {
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:#111;
+  color:#f2f2f2;
+}
+.wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.card {
+  background:#181818;
+  border:1px solid #333;
+  border-radius:16px;
+  padding:14px;
+  margin-bottom:14px;
+}
+h1 { margin:0 0 10px 0; font-size:26px; }
+h2 { margin:0 0 8px 0; font-size:20px; color:#ffe36c; }
+p { line-height:1.45; color:#d3d3d3; }
+table {
+  border-collapse:collapse;
+  width:100%;
+}
+th, td {
+  border:1px solid rgba(255,255,255,0.12);
+  padding:8px 10px;
+  text-align:left;
+  vertical-align:top;
+}
+th {
+  background:#222;
+  color:#fff2b0;
+  position: sticky;
+  top: 0;
+}
+td {
+  background:#141414;
+}
+.symbols {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color:#bfe3ff;
+}
+.grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap:12px;
+}
+.good { color:#8de39f; font-weight:700; }
+.bad { color:#ffb0b0; font-weight:700; }
+.code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#bfe3ff; }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="card">
+    <h1>Single-Player Monte Carlo by Staging Rim Cell</h1>
+    <p>This is the right design-analysis view: one player only, no crowding, no shared occupancy. Each row estimates the behavior of the game when a player starts from a fixed staging Rim cell. Simulations: <span class="code">10,000 runs per Rim cell</span>, cap <span class="code">5,000 throws</span>.</p>
+  </div>
 
-<div class="top">
-<input type="file" id="file">
-<label>Stroke</label><input type="color" id="stroke" value="#ffffff">
-<label>Fill</label><input type="color" id="fill" value="#ff0000">
-<button onclick="startDraw()">Draw</button>
-<button onclick="finish()">Save</button>
-<button onclick="exportJSON()">Export</button>
+  <div class="grid">
+    <div class="card">
+      <h2>Side A headline</h2>
+      <p>Best win-rate staging: <span class="good">R11 (57.83%)</span></p>
+      <p>Worst win-rate staging: <span class="bad">R10 (48.04%)</span></p>
+      <p>Corrected end rule used: exact landing on <span class="code">T19</span> wins with no symbol match required there; <span class="code">T18</span> is fatal.</p>
+    </div>
+    <div class="card">
+      <h2>Side B headline</h2>
+      <p>Best win-rate staging: <span class="good">R01 (100.00%)</span></p>
+      <p>Worst win-rate staging: <span class="bad">R01 (100.00%)</span></p>
+      <p>Revised end rule used: overflow beyond <span class="code">T18</span> wins; no terminal symbol match required.</p>
+    </div>
+  </div>
+
+  
+    <div class="card">
+      <h2>Side A: single-player results by staging Rim cell</h2>
+      <p>Side A endgame = exact T19 completion, no match on T19; T18 is terminal failure.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Staging Rim</th>
+            <th>Symbols</th>
+            <th>Win rate</th>
+            <th>Trap / fail rate</th>
+            <th>Cap-no-finish rate</th>
+            <th>E[throws | win]</th>
+            <th>Median throws | win</th>
+            <th>Avg throws overall</th>
+            <th>Avg skipped throws</th>
+            <th>Avg overshoots</th>
+          </tr>
+        </thead>
+        <tbody>
+    
+          <tr>
+            <td><strong>R01</strong></td>
+            <td class="symbols">S37_a; S02_b; S12_c; S13_d; S01_e; S18_f</td>
+            <td>54.21%</td>
+            <td>45.79%</td>
+            <td>0.00%</td>
+            <td>10.1</td>
+            <td>6.0</td>
+            <td>9.0</td>
+            <td>5.5</td>
+            <td>4.6</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R02</strong></td>
+            <td class="symbols">S24_a; S40_b; S12_c</td>
+            <td>55.73%</td>
+            <td>44.27%</td>
+            <td>0.00%</td>
+            <td>11.2</td>
+            <td>8.0</td>
+            <td>10.4</td>
+            <td>7.0</td>
+            <td>4.6</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R03</strong></td>
+            <td class="symbols">S29_a; S45_b; S07_c; S05_d; S01_e</td>
+            <td>48.24%</td>
+            <td>51.76%</td>
+            <td>0.00%</td>
+            <td>14.3</td>
+            <td>13.0</td>
+            <td>14.0</td>
+            <td>11.0</td>
+            <td>1.3</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R04</strong></td>
+            <td class="symbols">S02_a; S12_b; S04_c; S50_d; S51_e</td>
+            <td>55.75%</td>
+            <td>44.25%</td>
+            <td>0.00%</td>
+            <td>10.6</td>
+            <td>7.0</td>
+            <td>9.8</td>
+            <td>6.3</td>
+            <td>4.6</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R05</strong></td>
+            <td class="symbols">S27_a; S45_b; S07_c; S12_d</td>
+            <td>55.08%</td>
+            <td>44.92%</td>
+            <td>0.00%</td>
+            <td>10.6</td>
+            <td>7.0</td>
+            <td>9.7</td>
+            <td>6.2</td>
+            <td>4.6</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R06</strong></td>
+            <td class="symbols">S27_a; S44_b; S08_c</td>
+            <td>51.06%</td>
+            <td>48.94%</td>
+            <td>0.00%</td>
+            <td>16.0</td>
+            <td>13.0</td>
+            <td>14.4</td>
+            <td>11.2</td>
+            <td>5.1</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R07</strong></td>
+            <td class="symbols">S02_a; S12_b; S06_c; S18_d; S51_e</td>
+            <td>54.93%</td>
+            <td>45.07%</td>
+            <td>0.00%</td>
+            <td>10.2</td>
+            <td>7.0</td>
+            <td>9.3</td>
+            <td>5.8</td>
+            <td>4.5</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R08</strong></td>
+            <td class="symbols">S31_a; S26_b; S35_c</td>
+            <td>56.29%</td>
+            <td>43.71%</td>
+            <td>0.00%</td>
+            <td>12.3</td>
+            <td>9.0</td>
+            <td>11.5</td>
+            <td>8.0</td>
+            <td>4.9</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R09</strong></td>
+            <td class="symbols">S02_a; S12_b; S52_c; S19_d; S53_e</td>
+            <td>55.77%</td>
+            <td>44.23%</td>
+            <td>0.00%</td>
+            <td>9.8</td>
+            <td>7.0</td>
+            <td>9.2</td>
+            <td>5.7</td>
+            <td>4.7</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R10</strong></td>
+            <td class="symbols">S01_a; S54_b; S40_c; S07_d</td>
+            <td>48.04%</td>
+            <td>51.96%</td>
+            <td>0.00%</td>
+            <td>14.3</td>
+            <td>13.0</td>
+            <td>14.0</td>
+            <td>11.1</td>
+            <td>1.4</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R11</strong></td>
+            <td class="symbols">S02_a; S12_b; S55_c; S37_d; S38_e</td>
+            <td>57.83%</td>
+            <td>42.17%</td>
+            <td>0.00%</td>
+            <td>10.5</td>
+            <td>7.0</td>
+            <td>9.6</td>
+            <td>6.3</td>
+            <td>5.1</td>
+          </tr>
+        
+        </tbody>
+      </table>
+    </div>
+    
+  
+    <div class="card">
+      <h2>Side B: single-player results by staging Rim cell</h2>
+      <p>Side B endgame = overflow completion beyond T18; no terminal symbol match required.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Staging Rim</th>
+            <th>Symbols</th>
+            <th>Win rate</th>
+            <th>Trap / fail rate</th>
+            <th>Cap-no-finish rate</th>
+            <th>E[throws | win]</th>
+            <th>Median throws | win</th>
+            <th>Avg throws overall</th>
+            <th>Avg skipped throws</th>
+            <th>Avg overshoots</th>
+          </tr>
+        </thead>
+        <tbody>
+    
+          <tr>
+            <td><strong>R01</strong></td>
+            <td class="symbols">S02_a; S12_b; S22_c; S20_d; S34_e</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>7.0</td>
+            <td>6.0</td>
+            <td>7.0</td>
+            <td>3.7</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R02</strong></td>
+            <td class="symbols">S27_a; S45_b; S07_c; S35_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>4.1</td>
+            <td>4.0</td>
+            <td>4.1</td>
+            <td>0.6</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R03</strong></td>
+            <td class="symbols">S02_a; S37_b; S23_c; S05_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>9.7</td>
+            <td>8.0</td>
+            <td>9.7</td>
+            <td>6.4</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R04</strong></td>
+            <td class="symbols">S22_a; S25_b; S27_c</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>8.4</td>
+            <td>7.0</td>
+            <td>8.4</td>
+            <td>5.2</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R05</strong></td>
+            <td class="symbols">S33_a; S24_b; S03_c; S12_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>21.0</td>
+            <td>17.0</td>
+            <td>21.0</td>
+            <td>17.7</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R06</strong></td>
+            <td class="symbols">S16_a; S23_b; S18_c; S43_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>20.3</td>
+            <td>17.0</td>
+            <td>20.3</td>
+            <td>17.1</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R07</strong></td>
+            <td class="symbols">S13_a; S01_b; S39_c; S33_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>29.1</td>
+            <td>23.0</td>
+            <td>29.1</td>
+            <td>25.6</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R08</strong></td>
+            <td class="symbols">S15_a; S07_b; S36_c; S06_d; S18_e</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>4.7</td>
+            <td>4.0</td>
+            <td>4.7</td>
+            <td>1.2</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R09</strong></td>
+            <td class="symbols">S22_a; S37_b; S42_c; S25_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>8.0</td>
+            <td>7.0</td>
+            <td>8.0</td>
+            <td>4.9</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R10</strong></td>
+            <td class="symbols">S07_a; S24_b; S40_c; S03_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>5.1</td>
+            <td>5.0</td>
+            <td>5.1</td>
+            <td>1.8</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R11</strong></td>
+            <td class="symbols">S02_a; S26_b; S36_c; S40_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>8.4</td>
+            <td>7.0</td>
+            <td>8.4</td>
+            <td>5.1</td>
+            <td>0.0</td>
+          </tr>
+        
+          <tr>
+            <td><strong>R12</strong></td>
+            <td class="symbols">S27_a; S25_b; S38_c; S01_d</td>
+            <td>100.00%</td>
+            <td>0.00%</td>
+            <td>0.00%</td>
+            <td>13.1</td>
+            <td>11.0</td>
+            <td>13.1</td>
+            <td>9.8</td>
+            <td>0.0</td>
+          </tr>
+        
+        </tbody>
+      </table>
+    </div>
+    
+
+  <div class="card">
+    <h2>Interpretive takeaway</h2>
+    <p>These tables isolate the board design itself by removing multiplayer crowding. They answer the right question for publication: not “does a crowded game finish?” but “how does each staging Rim cell behave under the rule system?” This is the proper base for A/B design comparison and for later symbol-removal experiments.</p>
+  </div>
 </div>
-
-<canvas id="c"></canvas>
-
-<script>
-let canvas = document.getElementById("c");
-let ctx = canvas.getContext("2d");
-
-let img = new Image();
-let shapes = [];
-let path = [];
-let drawing = false;
-
-let scale = 1;
-let offsetX = 0, offsetY = 0;
-let isPanning = false;
-let lastX=0, lastY=0;
-
-document.getElementById("file").onchange = e=>{
-  let f = e.target.files[0];
-  let url = URL.createObjectURL(f);
-  img.onload = ()=>{
-    canvas.width = img.width;
-    canvas.height = img.height;
-    draw();
-  }
-  img.src = url;
-}
-
-function draw(){
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-  ctx.drawImage(img,0,0);
-
-  for(let s of shapes){
-    ctx.beginPath();
-    ctx.moveTo(s[0].x, s[0].y);
-    for(let p of s) ctx.lineTo(p.x,p.y);
-    ctx.closePath();
-    ctx.fillStyle = s.fill;
-    ctx.fill();
-    ctx.strokeStyle = s.stroke;
-    ctx.stroke();
-  }
-
-  if(path.length){
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for(let p of path) ctx.lineTo(p.x,p.y);
-    ctx.strokeStyle="yellow";
-    ctx.stroke();
-  }
-}
-
-function startDraw(){ drawing=true; path=[]; }
-
-function finish(){
-  if(path.length<3) return;
-  path.fill = document.getElementById("fill").value;
-  path.stroke = document.getElementById("stroke").value;
-  shapes.push(path);
-  path=[];
-  drawing=false;
-  draw();
-}
-
-canvas.onpointerdown = e=>{
-  if(drawing){
-    path.push(getPos(e));
-  } else {
-    isPanning=true;
-    lastX=e.clientX; lastY=e.clientY;
-  }
-}
-
-canvas.onpointermove = e=>{
-  if(drawing){
-    path.push(getPos(e));
-    draw();
-  } else if(isPanning){
-    offsetX += (e.clientX-lastX)/scale;
-    offsetY += (e.clientY-lastY)/scale;
-    lastX=e.clientX; lastY=e.clientY;
-    draw();
-  }
-}
-
-canvas.onpointerup = ()=>{ isPanning=false; }
-
-canvas.onwheel = e=>{
-  e.preventDefault();
-  let zoom = e.deltaY<0 ? 1.1 : 0.9;
-  scale *= zoom;
-  draw();
-}
-
-function getPos(e){
-  let rect = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX-rect.left)/scale - offsetX,
-    y: (e.clientY-rect.top)/scale - offsetY
-  }
-}
-
-function exportJSON(){
-  let data = JSON.stringify(shapes);
-  navigator.clipboard.writeText(data);
-  alert("Copied JSON");
-}
-</script>
-
 </body>
 </html>

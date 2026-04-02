@@ -1,77 +1,290 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Corrected Side A vs Side B Simulation Comparison</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Disk / Shape Tracer v11</title>
 <style>
-body {
-  margin:0;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:#111;
-  color:#f2f2f2;
-}
-.wrap { padding: 16px; max-width: 1100px; margin: 0 auto; }
-.card {
-  background:#181818;
-  border:1px solid #333;
-  border-radius:16px;
-  padding:14px;
-  margin-bottom:14px;
-}
-h1 { margin:0 0 10px 0; font-size:26px; }
-h2 { margin:0 0 8px 0; font-size:20px; color:#ffe36c; }
-p { line-height:1.45; color:#d3d3d3; }
-table {
-  border-collapse:collapse;
-  width:100%;
-}
-th, td {
-  border:1px solid rgba(255,255,255,0.12);
-  padding:8px 10px;
-  text-align:left;
-  vertical-align:top;
-}
-th { background:#222; color:#fff2b0; }
-td { background:#141414; }
-.good { color:#8de39f; font-weight:700; }
-.bad { color:#ffb0b0; font-weight:700; }
-.code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#bfe3ff; }
+  :root{
+    --bg:#121212; --panel:#1d1d1d; --text:#f2f2f2; --muted:#bdbdbd;
+    --line:#3a3a3a; --btn:#efefef; --btnText:#111; --accent:#7cc4ff;
+  }
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overscroll-behavior:none}
+  .bar{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .bar label{font-size:15px}
+  input[type="text"],input[type="range"],select{
+    padding:8px 10px;border-radius:10px;border:1px solid #666;background:#fff;color:#111;font-size:16px
+  }
+  input[type="text"]{width:140px}
+  button{border:1px solid #777;background:var(--btn);color:var(--btnText);border-radius:999px;padding:10px 14px;font-size:16px}
+  .wrap{max-width:1680px;margin:0 auto;padding:10px}
+  .hint,.status{color:var(--muted);font-size:14px;line-height:1.4}
+  .status{margin:8px 0}
+  .main{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:12px}
+  @media (max-width:980px){.main{grid-template-columns:1fr}}
+  .canvasWrap{border:1px solid var(--line);background:#000;overflow:hidden;touch-action:none}
+  canvas{display:block;width:100%;height:auto;background:#000;touch-action:none}
+  .side{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px}
+  .shapeList{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#101010}
+  .shape{padding:8px 10px;border-bottom:1px solid #2a2a2a;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;cursor:pointer}
+  .shape:last-child{border-bottom:none}
+  .shape small{display:block;color:var(--muted)}
+  .shape.selected{background:#1b2a36;box-shadow:inset 0 0 0 1px var(--accent)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .sw{border:1px solid #666;border-radius:10px;padding:10px 8px;text-align:center;font-size:14px;cursor:pointer;background:#fff;color:#111}
+  textarea{width:100%;min-height:160px;margin-top:10px;border-radius:10px;border:1px solid var(--line);background:#0d0d0d;color:#92f092;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.35}
+  .mini{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
+<div class="bar">
+  <label>Image</label><input id="filePicker" type="file" accept="image/*" />
+  <label>Label</label><input id="labelInput" type="text" placeholder="R01 / T03 / DIV01" />
+  <label>Mode</label>
+  <select id="modeSelect">
+    <option value="pan">Pan/View</option>
+    <option value="point">Point-by-point shape</option>
+    <option value="freehand">Freehand shape</option>
+    <option value="edit">Edit vertices</option>
+    <option value="divider">2-tap divider</option>
+  </select>
+  <label>Overlay</label>
+  <select id="overlayMode">
+    <option value="disk">Disk only</option>
+    <option value="both" selected>Disk + groove overlay</option>
+    <option value="edge">Groove overlay only</option>
+  </select>
+  <label>Snap</label>
+  <select id="snapToggle">
+    <option value="off">Off</option>
+    <option value="on" selected>On</option>
+  </select>
+  <label>Strength</label><input id="edgeStrength" type="range" min="10" max="180" value="45" />
+  <label>Smooth</label><input id="smoothSlider" type="range" min="1" max="20" value="5" />
+  <button id="buildOverlayBtn">Build Overlay</button>
+  <button id="startBtn">Start</button>
+  <button id="finishBtn">Finish & Save</button>
+  <button id="undoPointBtn">Undo Point</button>
+  <button id="cancelBtn">Cancel Current</button>
+  <button id="smoothBtn">Smooth Selected</button>
+  <button id="simplifyBtn">Simplify Selected</button>
+</div>
+
 <div class="wrap">
-  <div class="card">
-    <h1>Corrected Side A vs Side B Play Simulation</h1>
-    <p>This report updates the Monte Carlo comparison after correcting the Side A end rule: <span class="code">exact landing on T19 wins without symbol matching</span>. Side B keeps the revised end rule: <span class="code">overflow beyond T18 wins without symbol matching</span>.</p>
-  </div>
-
-  <div class="card">
-    <h2>Assumptions used</h2>
-    <p><span class="code">Side A</span>: staging from opening 2d6 mapped as 2→R01 … 12→R11; exact landing on T19 wins and requires no symbol match; overshoot causes no move; landing on T18 is terminal failure; symbol matching still governs all intermediate landing cells; choosing <span class="code">S38</span> from R11 grants an extra turn.</p>
-    <p><span class="code">Side B</span>: staging from opening 2d6 mapped as 2→R02 … 12→R12; overflow beyond T18 wins and requires no symbol match; symbol matching governs all occupied intermediate landing cells.</p>
-  </div>
-
-  <div class="card">
-    <h2>Connectivity context</h2>
-    <p>Side A still has two zero-match Track cells under the matrix comparison: <span class="code">T1, T12, T15, T2, T3, T4, T5, T6, T7, T8, T9</span>. Side B has none. This remains an important structural difference even after correcting the Side A terminal rule.</p>
-  </div>
-
-  <div class="card">
-    <h2>Simulation metrics</h2>
-    <table>
-      <thead><tr><th>Metric</th><th>Side A</th><th>Side B</th></tr></thead>
-      <tbody>
-        <tr><td>Games simulated</td><td>5000</td><td>5000</td></tr><tr><td>Games with at least one winner</td><td>311</td><td>5000</td></tr><tr><td>Finished before 1000-turn cap</td><td>0</td><td>4866</td></tr><tr><td>Unfinished at cap</td><td>5000</td><td>134</td></tr><tr><td>Average total turns per game</td><td>1000.0</td><td>69.7</td></tr><tr><td>Median total turns per game</td><td>1000.0</td><td>37.0</td></tr><tr><td>Per-player win rate</td><td>1.57%</td><td>74.30%</td></tr><tr><td>Per-player failure rate</td><td>1.20%</td><td>0.00%</td></tr><tr><td>Average turns per player</td><td>250.0</td><td>17.4</td></tr><tr><td>Average successful moves per player</td><td>0.066</td><td>2.666</td></tr><tr><td>Average skipped turns per player</td><td>249.922</td><td>14.750</td></tr><tr><td>Average overshoots per player</td><td>0.141</td><td>0.000</td></tr><tr><td>Average T18 traps per player</td><td>0.012</td><td>0.000</td></tr><tr><td>Average extra turns per player</td><td>0.007</td><td>0.000</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>Reading the corrected result</h2>
-    <p><span class="bad">Side A is now winnable from more than R11</span>, but it remains extremely restrictive under the current rules and occupancy model. In this run, at least one player won in 311 of 5000 games, but almost all games still stalled before the 1000-turn cap because movement opportunities remain rare.</p>
-    <p><span class="good">Side B remains dramatically more playable</span>. It produced a winner in every simulated game, with far shorter game length and much more successful movement.</p>
+  <div class="hint">v11 unifies tracing, smoothing, groove overlay, snap-to-edge, edit vertices, and divider drawing. Use Pan/View for one-finger panning. Use Divider mode to tap two snapped points and create a compartment divider. For smoother spirals, draw in Freehand mode, save, then use Smooth Selected and Simplify Selected.</div>
+  <div class="status" id="status">Choose an image to begin.</div>
+  <div class="main">
+    <div><div class="canvasWrap" id="canvasWrap"><canvas id="canvas" width="1400" height="1000"></canvas></div></div>
+    <div class="side">
+      <div><strong>Saved Objects</strong> <span id="selectedBadge">none selected</span></div>
+      <div class="shapeList" id="shapeList"></div>
+      <div class="row">
+        <button id="centerSelectedBtn">Center Selected</button>
+        <button id="fitBtn">Fit</button>
+        <button id="zoomInBtn">Zoom In</button>
+        <button id="zoomOutBtn">Zoom Out</button>
+        <button id="resetViewBtn">Reset View</button>
+      </div>
+      <div class="swatches" id="swatches"></div>
+      <div class="row">
+        <button id="deleteSelectedBtn">Delete Selected</button>
+        <button id="copyJsonBtn">Copy JSON</button>
+        <button id="importJsonBtn">Import JSON</button>
+        <button id="exportPngBtn">Export Overlay PNG</button>
+      </div>
+      <textarea id="jsonOut" placeholder="Exported JSON appears here..."></textarea>
+    </div>
   </div>
 </div>
-</body>
-</html>
+
+<script>
+(()=>{
+const PRESETS=[
+ ['Player 1','rgba(232,107,107,0.45)','rgba(232,107,107,0.95)'],
+ ['Player 2','rgba(104,204,127,0.45)','rgba(104,204,127,0.95)'],
+ ['Legal Move','rgba(99,167,255,0.45)','rgba(99,167,255,0.95)'],
+ ['Staging','rgba(255,255,255,0.38)','rgba(255,255,255,0.95)'],
+ ['Warning','rgba(255,215,0,0.40)','rgba(255,215,0,0.95)'],
+ ['Clear','rgba(0,0,0,0.00)','rgba(255,255,255,0.95)']
+];
+const c=document.getElementById('canvas'), ctx=c.getContext('2d'), cw=document.getElementById('canvasWrap');
+const statusEl=document.getElementById('status'), list=document.getElementById('shapeList'), out=document.getElementById('jsonOut'), selectedBadge=document.getElementById('selectedBadge');
+const modeEl=document.getElementById('modeSelect'), overlayEl=document.getElementById('overlayMode'), snapEl=document.getElementById('snapToggle'), strengthEl=document.getElementById('edgeStrength'), smoothEl=document.getElementById('smoothSlider');
+const labelEl=document.getElementById('labelInput');
+
+let img=new Image(), imgLoaded=false, imgW=0, imgH=0, objectURL=null;
+let edgeCanvas=document.createElement('canvas'), edgeCtx=edgeCanvas.getContext('2d'), edgeData=null, edgeReady=false;
+let scale=1, minScale=0.1, maxScale=20, offsetX=0, offsetY=0;
+let objects=[], current=[], tracing=false, drawing=false, selectedId=null, selectedVertexIndex=null, dragVertex=false;
+let ptrs=new Map(), panStart=null, pinchStart=null;
+
+function setStatus(s){statusEl.textContent=s;}
+function selectedObj(){return objects.find(o=>o.id===selectedId)||null;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function imgToCan(p){return {x:p.x*scale+offsetX,y:p.y*scale+offsetY};}
+function canToImg(clientX,clientY){const r=c.getBoundingClientRect(); return {x:(clientX-r.left-offsetX)/scale,y:(clientY-r.top-offsetY)/scale};}
+function pointInPoly(pt,poly){let inside=false; for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i].x,yi=poly[i].y,xj=poly[j].x,yj=poly[j].y; const inter=((yi>pt.y)!==(yj>pt.y))&&(pt.x<(xj-xi)*(pt.y-yi)/((yj-yi)||1e-9)+xi); if(inter) inside=!inside;} return inside;}
+function nearestVertex(obj,p,maxPx=18){if(!obj.points) return null; let best=null,bd=1e9; obj.points.forEach((pt,i)=>{const a=imgToCan(pt), b=imgToCan(p), d=Math.hypot(a.x-b.x,a.y-b.y); if(d<bd){bd=d; best=i;}}); return bd<=maxPx?best:null;}
+function drawHandle(p,sel){const q=imgToCan(p); ctx.beginPath(); ctx.arc(q.x,q.y,sel?7:5,0,Math.PI*2); ctx.fillStyle=sel?'#ffea61':'#ffd54d'; ctx.fill(); ctx.strokeStyle='#111'; ctx.stroke();}
+function centroid(points){let x=0,y=0; for(const p of points){x+=p.x;y+=p.y;} return {x:x/points.length,y:y/points.length};}
+function bbox(points){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; for(const p of points){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);} return {minX,minY,maxX,maxY};}
+function snapPoint(p,r=10){
+ if(snapEl.value!=='on' || !edgeReady || !edgeData) return p;
+ let px=Math.round(p.x), py=Math.round(p.y), best=null, bd=1e9;
+ for(let y=Math.max(1,py-r); y<=Math.min(imgH-2,py+r); y++){
+  for(let x=Math.max(1,px-r); x<=Math.min(imgW-2,px+r); x++){
+   const i=(y*imgW+x)*4;
+   if(edgeData[i+3]>20){
+    const d=Math.hypot(x-p.x,y-p.y);
+    if(d<bd){bd=d; best={x,y};}
+   }
+  }
+ }
+ return best||p;
+}
+function drawPath(points,fill,stroke,closed,lineWidth=2){
+ if(points.length<2) return;
+ ctx.beginPath();
+ let q=imgToCan(points[0]); ctx.moveTo(q.x,q.y);
+ for(let i=1;i<points.length;i++){q=imgToCan(points[i]); ctx.lineTo(q.x,q.y);}
+ if(closed){ctx.closePath(); if(fill && !fill.includes('0,0,0,0.00')){ctx.fillStyle=fill; ctx.fill();}}
+ ctx.lineWidth=lineWidth; ctx.strokeStyle=stroke; ctx.stroke();
+}
+function drawDivider(points, stroke, lineWidth=2){
+ if(points.length<2) return;
+ const a=imgToCan(points[0]), b=imgToCan(points[1]);
+ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.lineWidth=lineWidth; ctx.strokeStyle=stroke; ctx.stroke();
+}
+function redraw(){
+ ctx.clearRect(0,0,c.width,c.height);
+ const om=overlayEl.value;
+ if(imgLoaded && om!=='edge') ctx.drawImage(img,offsetX,offsetY,imgW*scale,imgH*scale); else {ctx.fillStyle='#101010'; ctx.fillRect(0,0,c.width,c.height);}
+ if(edgeReady && om!=='disk') ctx.drawImage(edgeCanvas,offsetX,offsetY,imgW*scale,imgH*scale);
+
+ objects.forEach(o=>{
+   const sel=o.id===selectedId;
+   if(o.type==='divider') drawDivider(o.points,o.stroke||'white',sel?3:2);
+   else {
+     drawPath(o.points,o.fill,o.stroke||'white',true,sel?3:2);
+     if(sel && modeEl.value==='edit') o.points.forEach((p,i)=>drawHandle(p,i===selectedVertexIndex));
+   }
+   if(o.points && o.points.length){
+     const cc=centroid(o.points); const ccc=imgToCan(cc); ctx.fillStyle='#fff'; ctx.fillText(o.label||'',ccc.x+4,ccc.y-4);
+   }
+ });
+ if(current.length){
+   if(modeEl.value==='divider') drawDivider(current,'rgba(255,255,0,0.95)',2);
+   else {drawPath(current,'rgba(255,255,0,0.18)','rgba(255,255,0,0.95)',false,2); if(modeEl.value==='point') current.forEach(p=>drawHandle(p,false));}
+ }
+}
+function refreshList(){
+ list.innerHTML='';
+ objects.forEach((o,i)=>{const d=document.createElement('div'); d.className='shape'+(o.id===selectedId?' selected':''); d.innerHTML=`<div><strong>${o.label||'(no label)'}</strong><small>${o.type}</small></div><div>${i+1}</div>`; d.onclick=()=>{selectedId=o.id; selectedVertexIndex=null; selectedBadge.textContent=o.label||'selected'; refreshList(); redraw();}; list.appendChild(d);});
+ if(!selectedObj()) selectedBadge.textContent='none selected';
+}
+function exportJSON(){out.value=JSON.stringify({view:{scale,offsetX,offsetY},overlay:{mode:overlayEl.value,snap:snapEl.value,strength:Number(strengthEl.value)},objects},null,2);}
+function fit(){ if(!imgLoaded) return; const w=cw.clientWidth-2, h=Math.max(500,window.innerHeight-280); scale=Math.min(w/imgW,h/imgH); offsetX=(w-imgW*scale)/2; offsetY=(h-imgH*scale)/2; redraw();}
+function zoomAt(cx,cy,f){const ix=(cx-offsetX)/scale, iy=(cy-offsetY)/scale; scale=clamp(scale*f,minScale,maxScale); offsetX=cx-ix*scale; offsetY=cy-iy*scale; redraw();}
+function buildOverlay(){
+ if(!imgLoaded) return;
+ edgeCanvas.width=imgW; edgeCanvas.height=imgH;
+ edgeCtx.drawImage(img,0,0,imgW,imgH);
+ const src=edgeCtx.getImageData(0,0,imgW,imgH), outData=edgeCtx.createImageData(imgW,imgH), d=src.data, o=outData.data, g=new Float32Array(imgW*imgH), t=Number(strengthEl.value);
+ for(let i=0,j=0;i<d.length;i+=4,j++) g[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+ for(let y=1;y<imgH-1;y++) for(let x=1;x<imgW-1;x++){
+   const idx=y*imgW+x;
+   const gx=-g[idx-imgW-1]+g[idx-imgW+1]-2*g[idx-1]+2*g[idx+1]-g[idx+imgW-1]+g[idx+imgW+1];
+   const gy=-g[idx-imgW-1]-2*g[idx-imgW]-g[idx-imgW+1]+g[idx+imgW-1]+2*g[idx+imgW]+g[idx+imgW+1];
+   const mag=Math.sqrt(gx*gx+gy*gy), oi=idx*4;
+   if(mag>t){o[oi]=120;o[oi+1]=220;o[oi+2]=255;o[oi+3]=120;}
+ }
+ edgeCtx.putImageData(outData,0,0);
+ edgeData=edgeCtx.getImageData(0,0,imgW,imgH).data; edgeReady=true; redraw(); setStatus('Groove overlay built.');
+}
+function smoothSelected(){
+ const o=selectedObj(); if(!o || o.type==='divider' || !o.points || o.points.length<3) return;
+ const strength=Number(smoothEl.value), p=o.points, np=[];
+ for(let i=0;i<p.length;i++){
+   let sx=0,sy=0,c=0;
+   for(let j=-strength;j<=strength;j++){
+     const k=i+j;
+     if(p[k]){sx+=p[k].x; sy+=p[k].y; c++;}
+   }
+   np.push({x:sx/c,y:sy/c});
+ }
+ o.points=np; redraw(); exportJSON(); setStatus('Selected shape smoothed.');
+}
+function simplifySelected(){
+ const o=selectedObj(); if(!o || o.type==='divider' || !o.points || o.points.length<3) return;
+ const step=Math.max(2, Math.round(Number(smoothEl.value)/2));
+ o.points=o.points.filter((_,i)=>i%step===0);
+ if(o.points.length<3) return;
+ redraw(); exportJSON(); setStatus('Selected shape simplified.');
+}
+
+PRESETS.forEach(p=>{const b=document.createElement('button'); b.className='sw'; b.textContent=p[0]; b.style.background=p[1].replace('0.45)','0.75)').replace('0.38)','0.75)').replace('0.40)','0.75)').replace('0.00)','0.10)'); b.onclick=()=>{const o=selectedObj(); if(!o) return; o.fill=p[1]; o.stroke=p[2]; redraw(); exportJSON();}; document.getElementById('swatches').appendChild(b);});
+
+document.getElementById('filePicker').onchange=e=>{const f=e.target.files[0]; if(!f) return; if(objectURL) URL.revokeObjectURL(objectURL); objectURL=URL.createObjectURL(f); img.onload=()=>{imgLoaded=true; imgW=img.naturalWidth; imgH=img.naturalHeight; fit(); buildOverlay(); setStatus('Loaded '+f.name);}; img.src=objectURL;};
+document.getElementById('buildOverlayBtn').onclick=buildOverlay;
+overlayEl.onchange=redraw; strengthEl.onchange=()=>{if(imgLoaded) buildOverlay();};
+document.getElementById('startBtn').onclick=()=>{current=[]; tracing=true; drawing=false; redraw();};
+document.getElementById('finishBtn').onclick=()=>{
+ if(modeEl.value==='divider'){
+   if(current.length!==2) return;
+   objects.push({id:Date.now()+Math.random(), type:'divider', label:labelEl.value||'divider', stroke:'rgba(255,255,255,0.95)', points:current.slice()});
+ } else {
+   if(current.length<3) return;
+   objects.push({id:Date.now()+Math.random(), type:'shape', label:labelEl.value||'shape', fill:PRESETS[0][1], stroke:PRESETS[0][2], points:current.slice()});
+ }
+ current=[]; tracing=false; drawing=false; refreshList(); redraw(); exportJSON();
+};
+document.getElementById('undoPointBtn').onclick=()=>{if(modeEl.value==='edit'){const o=selectedObj(); if(o && o.type==='shape' && selectedVertexIndex!==null && o.points.length>3){o.points.splice(selectedVertexIndex,1); selectedVertexIndex=null; redraw(); exportJSON();}} else if(current.length){current.pop(); redraw();}};
+document.getElementById('cancelBtn').onclick=()=>{current=[]; tracing=false; drawing=false; redraw();};
+document.getElementById('smoothBtn').onclick=smoothSelected;
+document.getElementById('simplifyBtn').onclick=simplifySelected;
+document.getElementById('centerSelectedBtn').onclick=()=>{const o=selectedObj(); if(!o) return; const xs=o.points.map(p=>p.x), ys=o.points.map(p=>p.y), cx=(Math.min(...xs)+Math.max(...xs))/2, cy=(Math.min(...ys)+Math.max(...ys))/2; offsetX=c.width/2-cx*scale; offsetY=c.height/2-cy*scale; redraw();};
+document.getElementById('fitBtn').onclick=fit; document.getElementById('zoomInBtn').onclick=()=>zoomAt(c.width/2,c.height/2,1.25); document.getElementById('zoomOutBtn').onclick=()=>zoomAt(c.width/2,c.height/2,0.8); document.getElementById('resetViewBtn').onclick=fit;
+document.getElementById('deleteSelectedBtn').onclick=()=>{if(selectedId){objects=objects.filter(o=>o.id!==selectedId); selectedId=null; refreshList(); redraw(); exportJSON();}};
+document.getElementById('exportJsonBtn').onclick=exportJSON;
+document.getElementById('copyJsonBtn').onclick=()=>{exportJSON(); navigator.clipboard.writeText(out.value).catch(()=>{});};
+document.getElementById('importJsonBtn').onclick=()=>{const txt=prompt('Paste JSON'); if(!txt) return; try{const obj=JSON.parse(txt); objects=obj.objects||[]; const ov=obj.overlay||{}; overlayEl.value=ov.mode||overlayEl.value; snapEl.value=ov.snap||snapEl.value; strengthEl.value=ov.strength||strengthEl.value; const v=obj.view||{}; scale=v.scale||scale; offsetX=v.offsetX||0; offsetY=v.offsetY||0; refreshList(); redraw(); exportJSON();}catch(e){setStatus('Invalid JSON');}};
+document.getElementById('exportPngBtn').onclick=()=>{const off=document.createElement('canvas'); off.width=imgW; off.height=imgH; const octx=off.getContext('2d'); objects.forEach(o=>{if(o.type==='divider'){octx.beginPath(); octx.moveTo(o.points[0].x,o.points[0].y); octx.lineTo(o.points[1].x,o.points[1].y); octx.lineWidth=2; octx.strokeStyle=o.stroke; octx.stroke();} else if(o.points.length>=3){octx.beginPath(); octx.moveTo(o.points[0].x,o.points[0].y); for(let i=1;i<o.points.length;i++) octx.lineTo(o.points[i].x,o.points[i].y); octx.closePath(); if(o.fill && !o.fill.includes('0,0,0,0.00')){octx.fillStyle=o.fill; octx.fill();} octx.lineWidth=2; octx.strokeStyle=o.stroke; octx.stroke();}}); off.toBlob(blob=>{const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='traced_overlay.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);},'image/png');};
+
+c.onwheel=e=>{e.preventDefault(); zoomAt(e.offsetX,e.offsetY,e.deltaY<0?1.12:0.89);};
+c.onpointerdown=e=>{
+ c.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(ptrs.size===2){const pts=[...ptrs.values()]; pinchStart={dist:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y), scale, offsetX, offsetY}; return;}
+ let p=canToImg(e.clientX,e.clientY);
+ if(modeEl.value==='edit' && !tracing){const o=selectedObj(); if(o && o.type==='shape'){const vi=nearestVertex(o,p); if(vi!==null){selectedVertexIndex=vi; dragVertex=true; redraw(); return;}}}
+ if(modeEl.value==='pan' && !tracing){panStart={x:e.clientX,y:e.clientY,offsetX,offsetY}; return;}
+ if(tracing){
+   p=snapPoint(p);
+   if(modeEl.value==='divider'){
+     if(current.length<2){current.push(p); redraw();}
+     return;
+   }
+   if(modeEl.value==='point'){current.push(p); redraw(); return;}
+   drawing=true; current=[p]; redraw(); return;
+ }
+ panStart={x:e.clientX,y:e.clientY,offsetX,offsetY};
+};
+c.onpointermove=e=>{
+ if(!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(ptrs.size===2 && pinchStart){
+   const pts=[...ptrs.values()], dist2=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y), r=c.getBoundingClientRect();
+   const midX=(pts[0].x+pts[1].x)/2-r.left, midY=(pts[0].y+pts[1].y)/2-r.top;
+   const f=dist2/(pinchStart.dist||1), ns=clamp(pinchStart.scale*f,minScale,maxScale);
+   const ix=(midX-pinchStart.offsetX)/pinchStart.scale, iy=(midY-pinchStart.offsetY)/pinchStart.scale;
+   scale=ns; offsetX=midX-ix*scale; offsetY=midY-iy*scale; redraw(); return;
+ }
+ if(dragVertex && modeEl.value==='edit'){const o=selectedObj(); if(o && o.type==='shape' && selectedVertexIndex!==null){let p=canToImg(e.clientX,e.clientY); p=snapPoint(p,8); o.points[selectedVertexIndex]=p; redraw(); exportJSON(); return;}}
+ if(tracing && drawing && modeEl.value==='freehand'){let p=canToImg(e.clientX,e.clientY); p=snapPoint(p,8); const last=current[current.length-1]; if(!last || Math.hypot(p.x-last.x,p.y-last.y)>=2){current.push(p); redraw();} return;}
+ if(panStart && ptrs.size===1){offsetX=panStart.offsetX+(e.clientX-panStart.x); offsetY=panStart.offsetY+(e.clientY-panStart.y); redraw();}
+};
+function endP(e){ptrs.delete(e.pointerId); if(dragVertex) dragVertex=false; if(drawing) drawing=false; if(ptrs.size<2) pinchStart=null; if(ptrs.size===0) panStart=null;}
+c.onpointerup=endP; c.onpointercancel=endP;
+c.onclick=e=>{if(tracing || modeEl.value==='edit') return; const p=canToImg(e.clientX,e.clientY); let found=null; for(let i=objects.length-1;i>=0;i--){const o=objects[i]; if(o.type==='shape' && pointInPoly(p,o.points)){found=o; break;}} selectedId=found?found.id:null; refreshList(); redraw();};
+})();
+</script>
+</body></html>

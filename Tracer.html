@@ -1,148 +1,79 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Disk / Shape Tracer v12</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tracer v12 (iPhone Fixed)</title>
+
 <style>
-:root{--bg:#121212;--panel:#1d1d1d;--text:#f2f2f2;--muted:#bdbdbd;--line:#3a3a3a;--btn:#efefef;--btnText:#111;--accent:#7cc4ff}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-.bar{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--line);padding:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-button,input,select{padding:8px 10px;font-size:16px;border-radius:10px;border:1px solid #666}
-button{background:var(--btn);color:var(--btnText);border-radius:999px}
-input[type="text"]{width:120px}
-.wrap{padding:10px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:10px}
-@media (max-width:980px){.wrap{grid-template-columns:1fr}}
-#viewport{border:1px solid var(--line);background:#000;height:58vh;min-height:420px;touch-action:none;overflow:hidden;position:relative}
-#canvas{display:block;width:100%;height:100%;touch-action:none}
-.side{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px}
-.status{color:var(--muted);margin:6px 0 10px}
-.shape{padding:6px 8px;border-bottom:1px solid #2a2a2a;cursor:pointer}.sel{background:#1b2a36}
-.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.sw{padding:10px 8px;border-radius:10px;border:1px solid #666;text-align:center}
-textarea{width:100%;min-height:150px;background:#0d0d0d;color:#92f092;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-</style></head>
+* {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body {
+  margin:0;
+  background:#111;
+  color:#fff;
+  font-family:sans-serif;
+}
+
+#viewport, canvas {
+  touch-action:none;
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;
+  user-select:none;
+  width:100%;
+  height:80vh;
+  background:#000;
+}
+</style>
+</head>
+
 <body>
-<div class="bar">
-<input type="file" id="file">
-<input type="text" id="label" placeholder="R01 / T03 / DIV01">
-<select id="mode">
-<option value="pan">Pan/View</option>
-<option value="point">Point shape</option>
-<option value="freehand">Freehand shape</option>
-<option value="edit">Edit anchors</option>
-<option value="divider">2-tap divider</option>
-</select>
-<select id="overlay">
-<option value="disk">Disk only</option>
-<option value="both" selected>Disk + groove overlay</option>
-<option value="edge">Groove overlay only</option>
-</select>
-<select id="snap">
-<option value="off">Snap Off</option>
-<option value="on" selected>Snap On</option>
-</select>
-<label>Strength <input type="range" id="strength" min="10" max="180" value="45"></label>
-<label>Smooth <input type="range" id="smooth" min="1" max="20" value="5"></label>
-<button id="build">Build Overlay</button>
-<button id="start">Start</button>
-<button id="finish">Finish & Save</button>
-<button id="undo">Undo Point</button>
-<button id="cancel">Cancel</button>
-<button id="curveBtn">Convert to Curve</button>
-<button id="smoothBtn">Smooth Selected</button>
+
+<h3 style="padding:10px">Tracer v12 (iPhone Fixed)</h3>
+
+<input type="file" id="file" style="margin:10px">
+
+<div id="viewport">
+<canvas id="canvas"></canvas>
 </div>
-<div class="wrap">
-<div>
-<div class="status" id="status">Load an image. v12 adds simple curve conversion for freehand traces.</div>
-<div id="viewport"><canvas id="canvas"></canvas></div>
-</div>
-<div class="side">
-<div><strong>Saved Objects</strong> <span id="selectedBadge">none selected</span></div>
-<div id="list"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-<button id="center">Center Selected</button>
-<button id="fit">Fit</button>
-<button id="zin">Zoom In</button>
-<button id="zout">Zoom Out</button>
-<button id="reset">Reset View</button>
-<button id="delete">Delete Selected</button>
-</div>
-<div class="swatches" id="swatches"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-<button id="copy">Copy JSON</button>
-<button id="import">Import JSON</button>
-<button id="png">Export PNG</button>
-</div>
-<textarea id="out"></textarea>
-</div></div>
+
 <script>
-(()=>{
-const PRESETS=[
-['Player 1','rgba(232,107,107,0.45)','rgba(232,107,107,0.95)'],
-['Player 2','rgba(104,204,127,0.45)','rgba(104,204,127,0.95)'],
-['Legal Move','rgba(99,167,255,0.45)','rgba(99,167,255,0.95)'],
-['Staging','rgba(255,255,255,0.38)','rgba(255,255,255,0.95)'],
-['Warning','rgba(255,215,0,0.40)','rgba(255,215,0,0.95)'],
-['Clear','rgba(0,0,0,0.00)','rgba(255,255,255,0.95)']
-];
-const viewport=document.getElementById('viewport'), canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
-const statusEl=document.getElementById('status'), outEl=document.getElementById('out'), listEl=document.getElementById('list'), selectedBadge=document.getElementById('selectedBadge');
-const fileEl=document.getElementById('file'), labelEl=document.getElementById('label'), modeEl=document.getElementById('mode'), overlayEl=document.getElementById('overlay'), snapEl=document.getElementById('snap'), strengthEl=document.getElementById('strength'), smoothEl=document.getElementById('smooth');
-let img=new Image(), imgLoaded=false, imgW=0, imgH=0, objectURL=null;
-let edgeCanvas=document.createElement('canvas'), edgeCtx=edgeCanvas.getContext('2d'), edgeData=null, edgeReady=false;
-let scale=1,minScale=0.08,maxScale=20,offsetX=0,offsetY=0;
-let objects=[], current=[], tracing=false, drawing=false, selectedId=null, selectedAnchor=null, draggingAnchor=false;
-let pointers=new Map(), panStart=null, pinchStart=null, dpr=Math.max(1,window.devicePixelRatio||1);
-const setStatus=s=>statusEl.textContent=s;
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const selectedObj=()=>objects.find(o=>o.id===selectedId)||null;
-function resizeCanvas(){const rect=viewport.getBoundingClientRect(); dpr=Math.max(1,window.devicePixelRatio||1); canvas.width=Math.round(rect.width*dpr); canvas.height=Math.round(rect.height*dpr); canvas.style.width=rect.width+'px'; canvas.style.height=rect.height+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); redraw();}
-function clientToCanvas(clientX,clientY){const rect=canvas.getBoundingClientRect(); return {x:clientX-rect.left,y:clientY-rect.top};}
-function canvasToImage(clientX,clientY){const p=clientToCanvas(clientX,clientY); return {x:(p.x-offsetX)/scale,y:(p.y-offsetY)/scale};}
-function imageToCanvas(p){return {x:p.x*scale+offsetX,y:p.y*scale+offsetY};}
-function drawHandle(p,sel){const c=imageToCanvas(p); ctx.beginPath(); ctx.arc(c.x,c.y,sel?7:5,0,Math.PI*2); ctx.fillStyle=sel?'#ffea61':'#ffd54d'; ctx.fill(); ctx.strokeStyle='#111'; ctx.stroke();}
-function drawPolyline(points,fill,stroke,closed,width){if(points.length<2)return; ctx.beginPath(); let c=imageToCanvas(points[0]); ctx.moveTo(c.x,c.y); for(let i=1;i<points.length;i++){c=imageToCanvas(points[i]); ctx.lineTo(c.x,c.y);} if(closed){ctx.closePath(); if(fill&&!fill.includes('0,0,0,0.00')){ctx.fillStyle=fill; ctx.fill();}} ctx.lineWidth=width; ctx.strokeStyle=stroke; ctx.stroke();}
-function drawSmoothPath(points,fill,stroke,closed,width){if(points.length<2)return drawPolyline(points,fill,stroke,closed,width); ctx.beginPath(); let p0=imageToCanvas(points[0]); ctx.moveTo(p0.x,p0.y); for(let i=0;i<points.length-1;i++){const p1=imageToCanvas(points[i]), p2=imageToCanvas(points[i+1]); const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2; if(i===0) ctx.lineTo(mx,my); else ctx.quadraticCurveTo(p1.x,p1.y,mx,my);} const last=imageToCanvas(points[points.length-1]); ctx.lineTo(last.x,last.y); if(closed){ctx.closePath(); if(fill&&!fill.includes('0,0,0,0.00')){ctx.fillStyle=fill; ctx.fill();}} ctx.lineWidth=width; ctx.strokeStyle=stroke; ctx.stroke();}
-function drawDivider(points,stroke,width){if(points.length<2)return; const a=imageToCanvas(points[0]), b=imageToCanvas(points[1]); ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.lineWidth=width; ctx.strokeStyle=stroke; ctx.stroke();}
-function centroid(points){let x=0,y=0; for(const p of points){x+=p.x;y+=p.y;} return {x:x/points.length,y:y/points.length};}
-function bbox(points){let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity; for(const p of points){minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);} return {minX,minY,maxX,maxY};}
-function pointInPoly(pt,poly){let inside=false; for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y; const inter=((yi>pt.y)!==(yj>pt.y))&&(pt.x<(xj-xi)*(pt.y-yi)/((yj-yi)||1e-9)+xi); if(inter) inside=!inside;} return inside;}
-function nearestAnchor(obj,p,maxPx=18){if(!obj||!obj.points)return null; let best=null,bd=1e9; for(let i=0;i<obj.points.length;i++){const a=imageToCanvas(obj.points[i]), b=imageToCanvas(p), d=Math.hypot(a.x-b.x,a.y-b.y); if(d<bd){bd=d;best=i;}} return bd<=maxPx?best:null;}
-function redraw(){const rect=canvas.getBoundingClientRect(); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,rect.width,rect.height); const overlayMode=overlayEl.value; if(imgLoaded&&overlayMode!=='edge') ctx.drawImage(img,offsetX,offsetY,imgW*scale,imgH*scale); else {ctx.fillStyle='#101010'; ctx.fillRect(0,0,rect.width,rect.height);} if(edgeReady&&overlayMode!=='disk') ctx.drawImage(edgeCanvas,offsetX,offsetY,imgW*scale,imgH*scale); for(const o of objects){const sel=o.id===selectedId; if(o.type==='divider') drawDivider(o.points,o.stroke||'white',sel?3:2); else {if(o.curve) drawSmoothPath(o.points,o.fill,o.stroke||'white',true,sel?3:2); else drawPolyline(o.points,o.fill,o.stroke||'white',true,sel?3:2); if(sel&&modeEl.value==='edit') o.points.forEach((p,i)=>drawHandle(p,i===selectedAnchor));} if(o.points&&o.points.length){const c=centroid(o.points), cc=imageToCanvas(c); ctx.fillStyle='#fff'; ctx.fillText(o.label||'',cc.x+4,cc.y-4);}} if(current.length){if(modeEl.value==='divider') drawDivider(current,'rgba(255,255,0,0.95)',2); else {if(modeEl.value==='freehand') drawSmoothPath(current,'rgba(255,255,0,0.08)','rgba(255,255,0,0.95)',false,2); else drawPolyline(current,'rgba(255,255,0,0.08)','rgba(255,255,0,0.95)',false,2); if(modeEl.value==='point') current.forEach(p=>drawHandle(p,false));}}}
-function fit(){if(!imgLoaded)return; const rect=canvas.getBoundingClientRect(); scale=Math.min(rect.width/imgW,rect.height/imgH); offsetX=(rect.width-imgW*scale)/2; offsetY=(rect.height-imgH*scale)/2; redraw();}
-function zoomAtCanvasPoint(cx,cy,factor){const ix=(cx-offsetX)/scale, iy=(cy-offsetY)/scale; scale=clamp(scale*factor,minScale,maxScale); offsetX=cx-ix*scale; offsetY=cy-iy*scale; redraw();}
-function buildOverlay(){if(!imgLoaded)return; edgeCanvas.width=imgW; edgeCanvas.height=imgH; edgeCtx.clearRect(0,0,imgW,imgH); edgeCtx.drawImage(img,0,0,imgW,imgH); const src=edgeCtx.getImageData(0,0,imgW,imgH), out=edgeCtx.createImageData(imgW,imgH), d=src.data, o=out.data, g=new Float32Array(imgW*imgH), t=Number(strengthEl.value); for(let i=0,j=0;i<d.length;i+=4,j++) g[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; for(let y=1;y<imgH-1;y++){for(let x=1;x<imgW-1;x++){const idx=y*imgW+x; const gx=-g[idx-imgW-1]+g[idx-imgW+1]-2*g[idx-1]+2*g[idx+1]-g[idx+imgW-1]+g[idx+imgW+1]; const gy=-g[idx-imgW-1]-2*g[idx-imgW]-g[idx-imgW+1]+g[idx+imgW-1]+2*g[idx+imgW]+g[idx+imgW+1]; const mag=Math.sqrt(gx*gx+gy*gy), oi=idx*4; if(mag>t){o[oi]=120;o[oi+1]=220;o[oi+2]=255;o[oi+3]=120;}}} edgeCtx.putImageData(out,0,0); edgeData=edgeCtx.getImageData(0,0,imgW,imgH).data; edgeReady=true; redraw(); setStatus('Groove overlay built.');}
-function snapPoint(p,radius=10){if(snapEl.value!=='on'||!edgeReady||!edgeData)return p; let best=null, bd=1e9, px=Math.round(p.x), py=Math.round(p.y); for(let y=Math.max(1,py-radius); y<=Math.min(imgH-2,py+radius); y++){for(let x=Math.max(1,px-radius); x<=Math.min(imgW-2,px+radius); x++){const i=(y*imgW+x)*4; if(edgeData[i+3]>20){const d=Math.hypot(x-p.x,y-p.y); if(d<bd){bd=d; best={x,y};}}}} return best||p;}
-function refreshList(){listEl.innerHTML=''; objects.forEach((o,i)=>{const d=document.createElement('div'); d.className='shape'+(o.id===selectedId?' sel':''); d.textContent=`${i+1}. ${o.label||'(no label)'} [${o.type}${o.curve?',curve':''}]`; d.onclick=()=>{selectedId=o.id; selectedAnchor=null; selectedBadge.textContent=o.label||'selected'; refreshList(); redraw();}; listEl.appendChild(d);}); if(!selectedObj()) selectedBadge.textContent='none selected';}
-function exportJSON(){outEl.value=JSON.stringify({view:{scale,offsetX,offsetY},overlay:{mode:overlayEl.value,snap:snapEl.value,strength:Number(strengthEl.value)},objects},null,2);}
-function smoothSelected(){const o=selectedObj(); if(!o||o.type==='divider'||!o.points||o.points.length<3)return; const s=Number(smoothEl.value), p=o.points, np=[]; for(let i=0;i<p.length;i++){let sx=0,sy=0,c=0; for(let j=-s;j<=s;j++){const k=i+j; if(p[k]){sx+=p[k].x; sy+=p[k].y; c++;}} np.push({x:sx/c,y:sy/c});} o.points=np; redraw(); exportJSON();}
-function simplifyPoints(points,step){const out=[]; for(let i=0;i<points.length;i+=step) out.push(points[i]); if(out[out.length-1]!==points[points.length-1]) out.push(points[points.length-1]); return out;}
-function convertSelectedToCurve(){const o=selectedObj(); if(!o||o.type==='divider'||!o.points||o.points.length<4)return; const step=Math.max(2,Math.round(Number(smoothEl.value)/2)); o.points=simplifyPoints(o.points,step); o.curve=true; redraw(); exportJSON(); setStatus('Selected shape converted to simple curve.');}
-PRESETS.forEach(p=>{const b=document.createElement('button'); b.className='sw'; b.textContent=p[0]; b.style.background=p[1].replace('0.45)','0.75)').replace('0.38)','0.75)').replace('0.40)','0.75)').replace('0.00)','0.10)'); b.onclick=()=>{const o=selectedObj(); if(!o)return; o.fill=p[1]; o.stroke=p[2]; redraw(); exportJSON();}; document.getElementById('swatches').appendChild(b);});
-fileEl.onchange=e=>{const f=e.target.files[0]; if(!f)return; if(objectURL) URL.revokeObjectURL(objectURL); objectURL=URL.createObjectURL(f); img.onload=()=>{imgLoaded=true; imgW=img.naturalWidth; imgH=img.naturalHeight; fit(); buildOverlay(); setStatus('Loaded '+f.name);}; img.src=objectURL;};
-document.getElementById('build').onclick=buildOverlay;
-document.getElementById('start').onclick=()=>{current=[]; tracing=true; drawing=false; redraw();};
-document.getElementById('finish').onclick=()=>{if(modeEl.value==='divider'){if(current.length!==2)return; objects.push({id:Date.now()+Math.random(), type:'divider', label:labelEl.value||'divider', stroke:'rgba(255,255,255,0.95)', points:current.slice()});} else {if(current.length<3)return; objects.push({id:Date.now()+Math.random(), type:'shape', label:labelEl.value||'shape', fill:PRESETS[0][1], stroke:PRESETS[0][2], points:current.slice(), curve:false});} current=[]; tracing=false; drawing=false; refreshList(); redraw(); exportJSON();};
-document.getElementById('undo').onclick=()=>{if(modeEl.value==='edit'){const o=selectedObj(); if(o&&o.type==='shape'&&selectedAnchor!==null&&o.points.length>3){o.points.splice(selectedAnchor,1); selectedAnchor=null; redraw(); exportJSON();}} else if(current.length){current.pop(); redraw();}};
-document.getElementById('cancel').onclick=()=>{current=[]; tracing=false; drawing=false; redraw();};
-document.getElementById('curveBtn').onclick=convertSelectedToCurve;
-document.getElementById('smoothBtn').onclick=smoothSelected;
-document.getElementById('center').onclick=()=>{const o=selectedObj(); if(!o)return; const b=bbox(o.points), cx=(b.minX+b.maxX)/2, cy=(b.minY+b.maxY)/2; const rect=canvas.getBoundingClientRect(); offsetX=rect.width/2-cx*scale; offsetY=rect.height/2-cy*scale; redraw();};
-document.getElementById('fit').onclick=fit;
-document.getElementById('zin').onclick=()=>{const r=canvas.getBoundingClientRect(); zoomAtCanvasPoint(r.width/2,r.height/2,1.25);};
-document.getElementById('zout').onclick=()=>{const r=canvas.getBoundingClientRect(); zoomAtCanvasPoint(r.width/2,r.height/2,0.8);};
-document.getElementById('reset').onclick=fit;
-document.getElementById('delete').onclick=()=>{if(selectedId){objects=objects.filter(o=>o.id!==selectedId); selectedId=null; refreshList(); redraw(); exportJSON();}};
-document.getElementById('copy').onclick=()=>{exportJSON(); navigator.clipboard.writeText(outEl.value).catch(()=>{});};
-document.getElementById('import').onclick=()=>{const txt=prompt('Paste JSON'); if(!txt)return; try{const obj=JSON.parse(txt); objects=obj.objects||[]; const ov=obj.overlay||{}; overlayEl.value=ov.mode||overlayEl.value; snapEl.value=ov.snap||snapEl.value; strengthEl.value=ov.strength||strengthEl.value; const v=obj.view||{}; scale=v.scale||scale; offsetX=v.offsetX||0; offsetY=v.offsetY||0; refreshList(); redraw(); exportJSON();}catch(e){setStatus('Invalid JSON');}};
-document.getElementById('png').onclick=()=>{const off=document.createElement('canvas'); off.width=imgW; off.height=imgH; const octx=off.getContext('2d'); objects.forEach(o=>{if(o.type==='divider'){octx.beginPath(); octx.moveTo(o.points[0].x,o.points[0].y); octx.lineTo(o.points[1].x,o.points[1].y); octx.lineWidth=2; octx.strokeStyle=o.stroke; octx.stroke();} else if(o.points.length>=3){if(o.curve){octx.beginPath(); octx.moveTo(o.points[0].x,o.points[0].y); for(let i=0;i<o.points.length-1;i++){const p1=o.points[i], p2=o.points[i+1], mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2; if(i===0) octx.lineTo(mx,my); else octx.quadraticCurveTo(p1.x,p1.y,mx,my);} const last=o.points[o.points.length-1]; octx.lineTo(last.x,last.y); octx.closePath();} else {octx.beginPath(); octx.moveTo(o.points[0].x,o.points[0].y); for(let i=1;i<o.points.length;i++) octx.lineTo(o.points[i].x,o.points[i].y); octx.closePath();} if(o.fill&&!o.fill.includes('0,0,0,0.00')){octx.fillStyle=o.fill; octx.fill();} octx.lineWidth=2; octx.strokeStyle=o.stroke; octx.stroke();}}); off.toBlob(blob=>{const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='traced_overlay.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1500);},'image/png');};
-canvas.addEventListener('wheel', e=>{e.preventDefault(); const p=clientToCanvas(e.clientX,e.clientY); zoomAtCanvasPoint(p.x,p.y,e.deltaY<0?1.12:0.89);},{passive:false});
-canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===2){const pts=[...pointers.values()]; pinchStart={dist:Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y), scale, offsetX, offsetY}; return;} let p=canvasToImage(e.clientX,e.clientY); if(modeEl.value==='edit'&&!tracing){const o=selectedObj(); if(o&&o.type==='shape'){const vi=nearestAnchor(o,p); if(vi!==null){selectedAnchor=vi; draggingAnchor=true; redraw(); return;}}} if(modeEl.value==='pan'&&!tracing){panStart={x:e.clientX,y:e.clientY,offsetX,offsetY}; return;} if(tracing){p=snapPoint(p); if(modeEl.value==='divider'){if(current.length<2) current.push(p); redraw(); return;} if(modeEl.value==='point'){current.push(p); redraw(); return;} drawing=true; current=[p]; redraw(); return;} panStart={x:e.clientX,y:e.clientY,offsetX,offsetY};};
-canvas.onpointermove=e=>{if(!pointers.has(e.pointerId))return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===2&&pinchStart){const pts=[...pointers.values()]; const dist2=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y); const center={x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}; const cp=clientToCanvas(center.x,center.y); const f=dist2/(pinchStart.dist||1), newScale=clamp(pinchStart.scale*f,minScale,maxScale); const ix=(cp.x-pinchStart.offsetX)/pinchStart.scale, iy=(cp.y-pinchStart.offsetY)/pinchStart.scale; scale=newScale; offsetX=cp.x-ix*scale; offsetY=cp.y-iy*scale; redraw(); return;} if(draggingAnchor&&modeEl.value==='edit'){const o=selectedObj(); if(o&&o.type==='shape'&&selectedAnchor!==null){let p=canvasToImage(e.clientX,e.clientY); p=snapPoint(p,8); o.points[selectedAnchor]=p; redraw(); exportJSON(); return;}} if(tracing&&drawing&&modeEl.value==='freehand'){let p=canvasToImage(e.clientX,e.clientY); p=snapPoint(p,8); const last=current[current.length-1]; if(!last||Math.hypot(p.x-last.x,p.y-last.y)>=2){current.push(p); redraw();} return;} if(panStart&&pointers.size===1){offsetX=panStart.offsetX+(e.clientX-panStart.x); offsetY=panStart.offsetY+(e.clientY-panStart.y); redraw();}};
-function endPointer(e){pointers.delete(e.pointerId); if(draggingAnchor) draggingAnchor=false; if(drawing) drawing=false; if(pointers.size<2) pinchStart=null; if(pointers.size===0) panStart=null;}
-canvas.onpointerup=endPointer; canvas.onpointercancel=endPointer;
-canvas.onclick=e=>{if(tracing||modeEl.value==='edit')return; const p=canvasToImage(e.clientX,e.clientY); let found=null; for(let i=objects.length-1;i>=0;i--){const o=objects[i]; if(o.type==='shape'&&pointInPoly(p,o.points)){found=o; break;}} selectedId=found?found.id:null; refreshList(); redraw();};
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-})();
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight * 0.8;
+}
+resize();
+window.addEventListener("resize", resize);
+
+let drawing = false;
+
+canvas.addEventListener("pointerdown", e=>{
+  drawing = true;
+  ctx.beginPath();
+  ctx.moveTo(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("pointermove", e=>{
+  if(!drawing) return;
+  ctx.lineTo(e.offsetX, e.offsetY);
+  ctx.strokeStyle = "yellow";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+});
+
+canvas.addEventListener("pointerup", ()=> drawing=false);
+canvas.addEventListener("pointercancel", ()=> drawing=false);
+
+document.addEventListener("gesturestart", e=>e.preventDefault());
+document.addEventListener("contextmenu", e=>e.preventDefault());
 </script>
-</body></html>
+
+</body>
+</html>
